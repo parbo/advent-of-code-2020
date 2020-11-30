@@ -9,7 +9,7 @@ fn part2(_: &Vec<i64>) -> i64 {
     0
 }
 
-fn parse(lines: &Vec<String>) -> Vec<i64> {
+fn parse(lines: &[String]) -> Vec<i64> {
     lines.iter().map(|x| x.parse::<i64>().unwrap()).collect()
 }
 
