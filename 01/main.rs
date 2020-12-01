@@ -3,24 +3,24 @@ use std::iter::*;
 
 fn part1(v: &Vec<i64>) -> i64 {
     for i in 0..v.len() {
-	for j in i..v.len() {
-	    if v[i] + v[j] == 2020 {
-		return v[i] * v[j];
-	    }
-	}
+        for j in i + 1..v.len() {
+            if v[i] + v[j] == 2020 {
+                return v[i] * v[j];
+            }
+        }
     }
     0
 }
 
 fn part2(v: &Vec<i64>) -> i64 {
     for i in 0..v.len() {
-	for j in i..v.len() {
-	    for k in j..v.len() {
-		if v[i] + v[j] + v[k] == 2020 {
-		    return v[i] * v[j] * v[k];
-		}
-	    }
-	}
+        for j in i + 1..v.len() {
+            for k in j + 1..v.len() {
+                if v[i] + v[j] + v[k] == 2020 {
+                    return v[i] * v[j] * v[k];
+                }
+            }
+        }
     }
     0
 }
