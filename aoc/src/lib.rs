@@ -35,8 +35,8 @@ impl fmt::Display for ParseError {
 impl error::Error for ParseError {
     fn source(&self) -> Option<&(dyn error::Error + 'static)> {
         match *self {
-            ParseError::Generic => None,
             ParseError::Parse(ref e) => Some(e),
+            ParseError::Generic => None,
         }
     }
 }
