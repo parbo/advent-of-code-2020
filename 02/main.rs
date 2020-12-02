@@ -1,6 +1,5 @@
-use aoc;
+use aoc::{self, ParseError};
 use std::iter::*;
-use std::num::ParseIntError;
 use std::str::FromStr;
 
 #[derive(Debug)]
@@ -12,7 +11,7 @@ struct Policy {
 }
 
 impl FromStr for Policy {
-    type Err = ParseIntError;
+    type Err = ParseError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let parts: Vec<&str> = s
@@ -21,7 +20,7 @@ impl FromStr for Policy {
             .collect();
         let min = parts[0].parse::<i64>()?;
         let max = parts[1].parse::<i64>()?;
-        let c = parts[2].chars().nth(0).unwrap();
+        let c = parts[2].chars().nth(0).ok_or(ParseError::Index)?;
         let password = parts[4].to_string();
 
         Ok(Policy {

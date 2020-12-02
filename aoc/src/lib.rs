@@ -2,10 +2,13 @@ use num;
 use pancurses;
 use std::collections::HashMap;
 use std::env;
+use std::error;
+use std::fmt;
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
 use std::iter::*;
+use std::num::ParseIntError;
 use std::path::Path;
 
 pub use mod_exp::mod_exp;
@@ -13,6 +16,36 @@ pub use modinverse::modinverse;
 pub use num::integer::*;
 pub use serde_scan::from_str;
 pub use serde_scan::scan;
+
+#[derive(Debug)]
+pub enum ParseError {
+    Index,
+    Parse(ParseIntError),
+}
+
+impl fmt::Display for ParseError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            ParseError::Index => write!(f, "invalid index"),
+            ParseError::Parse(..) => write!(f, "the provided string could not be parsed as int"),
+        }
+    }
+}
+
+impl error::Error for ParseError {
+    fn source(&self) -> Option<&(dyn error::Error + 'static)> {
+        match *self {
+            ParseError::Index => None,
+            ParseError::Parse(ref e) => Some(e),
+        }
+    }
+}
+
+impl From<ParseIntError> for ParseError {
+    fn from(err: ParseIntError) -> ParseError {
+        ParseError::Parse(err)
+    }
+}
 
 pub fn cum_sum<T: num::Num + Copy>(a: &[T]) -> Vec<T> {
     a.iter()
