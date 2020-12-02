@@ -16,8 +16,8 @@ impl FromStr for Policy {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let parts = aoc::split(s, |c| c == '-' || c == ':' || c == ' ');
         Ok(Policy {
-            min: parts[0].parse::<usize>()?,
-            max: parts[1].parse::<usize>()?,
+            min: parts[0].parse()?,
+            max: parts[1].parse()?,
             c: parts[2].chars().nth(0).ok_or(ParseError::Generic)?,
             password: parts[4].to_string(),
         })
@@ -45,7 +45,7 @@ fn part2(passwords: &Vec<Policy>) -> usize {
 }
 
 fn parse(lines: &[String]) -> Vec<Policy> {
-    lines.iter().map(|x| x.parse::<Policy>().unwrap()).collect()
+    lines.iter().map(|x| x.parse().unwrap()).collect()
 }
 
 fn main() {
