@@ -14,10 +14,7 @@ impl FromStr for Policy {
     type Err = ParseError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let parts: Vec<&str> = s
-            .split(|c| c == '-' || c == ':' || c == ' ')
-            .map(|w| w.trim())
-            .collect();
+        let parts = aoc::split(s, |c| c == '-' || c == ':' || c == ' ');
         let min = parts[0].parse::<i64>()?;
         let max = parts[1].parse::<i64>()?;
         let c = parts[2].chars().nth(0).ok_or(ParseError::Generic)?;
