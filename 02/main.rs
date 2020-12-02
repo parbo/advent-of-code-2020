@@ -20,7 +20,7 @@ impl FromStr for Policy {
             .collect();
         let min = parts[0].parse::<i64>()?;
         let max = parts[1].parse::<i64>()?;
-        let c = parts[2].chars().nth(0).ok_or(ParseError::Index)?;
+        let c = parts[2].chars().nth(0).ok_or(ParseError::Generic)?;
         let password = parts[4].to_string();
 
         Ok(Policy {

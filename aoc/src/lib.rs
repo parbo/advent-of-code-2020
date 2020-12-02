@@ -19,14 +19,14 @@ pub use serde_scan::scan;
 
 #[derive(Debug)]
 pub enum ParseError {
-    Index,
+    Generic,
     Parse(ParseIntError),
 }
 
 impl fmt::Display for ParseError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            ParseError::Index => write!(f, "invalid index"),
+            ParseError::Generic => write!(f, "some error"),
             ParseError::Parse(..) => write!(f, "the provided string could not be parsed as int"),
         }
     }
@@ -35,7 +35,7 @@ impl fmt::Display for ParseError {
 impl error::Error for ParseError {
     fn source(&self) -> Option<&(dyn error::Error + 'static)> {
         match *self {
-            ParseError::Index => None,
+            ParseError::Generic => None,
             ParseError::Parse(ref e) => Some(e),
         }
     }
