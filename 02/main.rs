@@ -4,8 +4,8 @@ use std::str::FromStr;
 
 #[derive(Debug)]
 struct Policy {
-    min: i64,
-    max: i64,
+    min: usize,
+    max: usize,
     c: char,
     password: String,
 }
@@ -15,38 +15,33 @@ impl FromStr for Policy {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let parts = aoc::split(s, |c| c == '-' || c == ':' || c == ' ');
-        let min = parts[0].parse::<i64>()?;
-        let max = parts[1].parse::<i64>()?;
-        let c = parts[2].chars().nth(0).ok_or(ParseError::Generic)?;
-        let password = parts[4].to_string();
-
         Ok(Policy {
-            min,
-            max,
-            c,
-            password,
+            min: parts[0].parse::<usize>()?,
+            max: parts[1].parse::<usize>()?,
+            c: parts[2].chars().nth(0).ok_or(ParseError::Generic)?,
+            password: parts[4].to_string(),
         })
     }
 }
 
 impl Policy {
     fn is_valid(&self) -> bool {
-        let count = self.password.chars().filter(|c| *c == self.c).count() as i64;
+        let count = self.password.chars().filter(|c| *c == self.c).count();
         count >= self.min && count <= self.max
     }
 
     fn is_valid_updated(&self) -> bool {
-        (self.password.chars().nth((self.min - 1) as usize).unwrap() == self.c)
-            ^ (self.password.chars().nth((self.max - 1) as usize).unwrap() == self.c)
+        (self.password.chars().nth(self.min - 1).unwrap() == self.c)
+            ^ (self.password.chars().nth(self.max - 1).unwrap() == self.c)
     }
 }
 
-fn part1(passwords: &Vec<Policy>) -> i64 {
-    passwords.iter().filter(|p| p.is_valid()).count() as i64
+fn part1(passwords: &Vec<Policy>) -> usize {
+    passwords.iter().filter(|p| p.is_valid()).count()
 }
 
-fn part2(passwords: &Vec<Policy>) -> i64 {
-    passwords.iter().filter(|p| p.is_valid_updated()).count() as i64
+fn part2(passwords: &Vec<Policy>) -> usize {
+    passwords.iter().filter(|p| p.is_valid_updated()).count()
 }
 
 fn parse(lines: &[String]) -> Vec<Policy> {
@@ -62,14 +57,4 @@ fn main() {
         part2(&parsed)
     };
     println!("{}", result);
-}
-
-#[cfg(test)]
-mod tests {
-    // use super::part1;
-
-    // #[test]
-    // fn test_part1() {
-    //     assert_eq!(part1(&vec![0]), 0);
-    // }
 }
