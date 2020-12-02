@@ -51,6 +51,14 @@ pub fn split(s: &str, pred: fn(char) -> bool) -> Vec<&str> {
     s.split(pred).map(|w| w.trim()).collect()
 }
 
+pub fn get_char(s: &str, ix: usize) -> Option<char> {
+    s.chars().nth(ix)
+}
+
+pub fn parse_char(s: &str, ix: usize) -> Result<char, ParseError> {
+    get_char(s, ix).ok_or(ParseError::Generic)
+}
+
 pub fn cum_sum<T: num::Num + Copy>(a: &[T]) -> Vec<T> {
     a.iter()
         .scan(T::zero(), |state, x| {

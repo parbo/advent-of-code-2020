@@ -18,7 +18,7 @@ impl FromStr for Policy {
         Ok(Policy {
             min: parts[0].parse()?,
             max: parts[1].parse()?,
-            c: parts[2].chars().nth(0).ok_or(ParseError::Generic)?,
+            c: aoc::parse_char(parts[2], 0)?,
             password: parts[4].to_string(),
         })
     }
