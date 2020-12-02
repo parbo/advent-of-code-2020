@@ -19,7 +19,7 @@ impl FromStr for Policy {
             min: parts[0].parse()?,
             max: parts[1].parse()?,
             c: aoc::parse_char(parts[2], 0)?,
-            password: parts[4].to_string(),
+            password: parts[3].to_string(),
         })
     }
 }

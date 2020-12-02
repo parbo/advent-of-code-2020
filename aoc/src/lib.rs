@@ -48,7 +48,7 @@ impl From<ParseIntError> for ParseError {
 }
 
 pub fn split(s: &str, pred: fn(char) -> bool) -> Vec<&str> {
-    s.split(pred).map(|w| w.trim()).collect()
+    s.split(pred).map(|w| w.trim()).filter(|x| x.len() > 0).collect()
 }
 
 pub fn get_char(s: &str, ix: usize) -> Option<char> {
