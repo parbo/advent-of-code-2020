@@ -47,6 +47,10 @@ impl From<ParseIntError> for ParseError {
     }
 }
 
+pub fn split(s: &str, pred: fn(char) -> bool) -> Vec<&str> {
+    s.split(pred).map(|w| w.trim()).collect()
+}
+
 pub fn cum_sum<T: num::Num + Copy>(a: &[T]) -> Vec<T> {
     a.iter()
         .scan(T::zero(), |state, x| {
