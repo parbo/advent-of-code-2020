@@ -8,6 +8,7 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
 use std::iter::*;
+use std::marker::PhantomData;
 use std::num::ParseIntError;
 use std::path::Path;
 
@@ -48,7 +49,10 @@ impl From<ParseIntError> for ParseError {
 }
 
 pub fn split(s: &str, pred: fn(char) -> bool) -> Vec<&str> {
-    s.split(pred).map(|w| w.trim()).filter(|x| x.len() > 0).collect()
+    s.split(pred)
+        .map(|w| w.trim())
+        .filter(|x| x.len() > 0)
+        .collect()
 }
 
 pub fn get_char(s: &str, ix: usize) -> Option<char> {
@@ -88,12 +92,12 @@ pub fn range_sum<T: num::Num + Copy>(cum_sum: &[T], a: usize, b: usize) -> T {
     }
 }
 
-pub trait Grid {
-    fn get_value(&self, pos: (i64, i64)) -> Option<i64>;
+pub trait Grid<T> {
+    fn get_value(&self, pos: (i64, i64)) -> Option<T>;
     fn extents(&self) -> ((i64, i64), (i64, i64));
 }
 
-impl Grid for HashMap<(i64, i64), i64> {
+impl Grid<i64> for HashMap<(i64, i64), i64> {
     fn get_value(&self, pos: (i64, i64)) -> Option<i64> {
         if let Some(x) = self.get(&pos) {
             Some(*x)
@@ -110,7 +114,24 @@ impl Grid for HashMap<(i64, i64), i64> {
     }
 }
 
-impl Grid for Vec<Vec<i64>> {
+impl Grid<char> for HashMap<(i64, i64), char> {
+    fn get_value(&self, pos: (i64, i64)) -> Option<char> {
+        if let Some(x) = self.get(&pos) {
+            Some(*x)
+        } else {
+            None
+        }
+    }
+    fn extents(&self) -> ((i64, i64), (i64, i64)) {
+        let min_x = self.iter().map(|p| (p.0).0).min().unwrap();
+        let min_y = self.iter().map(|p| (p.0).1).min().unwrap();
+        let max_x = self.iter().map(|p| (p.0).0).max().unwrap();
+        let max_y = self.iter().map(|p| (p.0).1).max().unwrap();
+        ((min_x, max_x), (min_y, max_y))
+    }
+}
+
+impl Grid<i64> for Vec<Vec<i64>> {
     fn get_value(&self, pos: (i64, i64)) -> Option<i64> {
         let (x, y) = pos;
         if let Some(line) = self.get(y as usize) {
@@ -133,46 +154,73 @@ impl Grid for Vec<Vec<i64>> {
     }
 }
 
-pub trait GridDrawer<G>
+impl Grid<char> for Vec<Vec<char>> {
+    fn get_value(&self, pos: (i64, i64)) -> Option<char> {
+        let (x, y) = pos;
+        if let Some(line) = self.get(y as usize) {
+            if let Some(c) = line.get(x as usize) {
+                return Some(*c);
+            }
+        }
+        None
+    }
+    fn extents(&self) -> ((i64, i64), (i64, i64)) {
+        if self.len() > 0 {
+            if self[0].len() > 0 {
+                return (
+                    (0, (self[0].len() - 1) as i64),
+                    (0, (self.len() - 1) as i64),
+                );
+            }
+        }
+        ((0, 0), (0, 0))
+    }
+}
+
+pub trait GridDrawer<G, T>
 where
-    G: Grid,
+    G: Grid<T>,
 {
     fn draw(&mut self, area: &G);
 }
 
 pub struct NopGridDrawer {}
 
-impl<G> GridDrawer<G> for NopGridDrawer
+impl<G, T> GridDrawer<G, T> for NopGridDrawer
 where
-    G: Grid,
+    G: Grid<T>,
 {
     fn draw(&mut self, _: &G) {}
 }
 
-pub struct PrintGridDrawer<F>
+pub struct PrintGridDrawer<F, T>
 where
-    F: Fn(i64) -> char,
+    F: Fn(T) -> char,
 {
     to_ch: F,
+    phantom: PhantomData<T>,
 }
 
-impl<F> PrintGridDrawer<F>
+impl<F, T> PrintGridDrawer<F, T>
 where
-    F: Fn(i64) -> char,
+    F: Fn(T) -> char,
 {
-    pub fn new(to_ch: F) -> PrintGridDrawer<F> {
-        PrintGridDrawer { to_ch }
+    pub fn new(to_ch: F) -> PrintGridDrawer<F, T> {
+        PrintGridDrawer {
+            to_ch,
+            phantom: PhantomData,
+        }
     }
 
-    fn to_char(&self, col: i64) -> char {
+    fn to_char(&self, col: T) -> char {
         (self.to_ch)(col)
     }
 }
 
-impl<F, G> GridDrawer<G> for PrintGridDrawer<F>
+impl<F, G, T> GridDrawer<G, T> for PrintGridDrawer<F, T>
 where
-    F: Fn(i64) -> char,
-    G: Grid,
+    F: Fn(T) -> char,
+    G: Grid<T>,
 {
     fn draw(&mut self, area: &G) {
         let ((min_x, max_x), (min_y, max_y)) = area.extents();
@@ -190,19 +238,20 @@ where
     }
 }
 
-pub struct CursesGridDrawer<F>
+pub struct CursesGridDrawer<F, T>
 where
-    F: Fn(i64) -> char,
+    F: Fn(T) -> char,
 {
     window: pancurses::Window,
     to_ch: F,
+    phantom: PhantomData<T>,
 }
 
-impl<F> CursesGridDrawer<F>
+impl<F, T> CursesGridDrawer<F, T>
 where
-    F: Fn(i64) -> char,
+    F: Fn(T) -> char,
 {
-    pub fn new(to_ch: F) -> CursesGridDrawer<F> {
+    pub fn new(to_ch: F) -> CursesGridDrawer<F, T> {
         let window = pancurses::initscr();
         pancurses::nl();
         pancurses::noecho();
@@ -210,27 +259,31 @@ where
         window.keypad(true);
         window.scrollok(true);
         window.nodelay(true);
-        CursesGridDrawer { window, to_ch }
+        CursesGridDrawer {
+            window,
+            to_ch,
+            phantom: PhantomData,
+        }
     }
 
-    fn to_char(&self, col: i64) -> char {
+    fn to_char(&self, col: T) -> char {
         (self.to_ch)(col)
     }
 }
 
-impl<F> Drop for CursesGridDrawer<F>
+impl<F, T> Drop for CursesGridDrawer<F, T>
 where
-    F: Fn(i64) -> char,
+    F: Fn(T) -> char,
 {
     fn drop(&mut self) {
         pancurses::endwin();
     }
 }
 
-impl<F, G> GridDrawer<G> for CursesGridDrawer<F>
+impl<F, G, T> GridDrawer<G, T> for CursesGridDrawer<F, T>
 where
-    F: Fn(i64) -> char,
-    G: Grid,
+    F: Fn(T) -> char,
+    G: Grid<T>,
 {
     fn draw(&mut self, area: &G) {
         self.window.clear();

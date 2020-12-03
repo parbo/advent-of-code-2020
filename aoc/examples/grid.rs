@@ -1,7 +1,7 @@
 use aoc;
 use aoc::GridDrawer;
 
-fn main() {
+fn print_i64() {
     let mut g = vec![];
     g.push(vec![3, 0, 0, 0, 0, 0, 0, 0, 3]);
     g.push(vec![0, 0, 0, 0, 0, 0, 0, 0, 0]);
@@ -21,4 +21,26 @@ fn main() {
         _ => panic!(),
     });
     gd.draw(&g);
+}
+
+fn print_char() {
+    let mut g = vec![];
+    g.push("+.......+".chars().collect());
+    g.push(".........".chars().collect());
+    g.push(".#.......".chars().collect());
+    g.push(".....AA..".chars().collect());
+    g.push(".....AA..".chars().collect());
+    g.push(".####....".chars().collect());
+    g.push(".........".chars().collect());
+    g.push(".........".chars().collect());
+    g.push(".........".chars().collect());
+    g.push("+.......+".chars().collect());
+    let mut gd = aoc::PrintGridDrawer::new(|x| x);
+    gd.draw(&g);
+}
+
+fn main() {
+    print_i64();
+    println!("");
+    print_char();
 }
