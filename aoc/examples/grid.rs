@@ -1,18 +1,29 @@
 use aoc;
 use aoc::GridDrawer;
 
-fn print_i64() {
+fn make_grid() -> Vec<String> {
     let mut g = vec![];
-    g.push(vec![3, 0, 0, 0, 0, 0, 0, 0, 3]);
-    g.push(vec![0, 0, 0, 0, 0, 0, 0, 0, 0]);
-    g.push(vec![0, 1, 0, 0, 0, 0, 0, 0, 0]);
-    g.push(vec![0, 0, 0, 0, 0, 2, 2, 0, 0]);
-    g.push(vec![0, 0, 0, 0, 0, 2, 2, 0, 0]);
-    g.push(vec![0, 1, 1, 1, 1, 0, 0, 0, 0]);
-    g.push(vec![0, 0, 0, 0, 0, 0, 0, 0, 0]);
-    g.push(vec![0, 0, 0, 0, 0, 0, 0, 0, 0]);
-    g.push(vec![0, 0, 0, 0, 0, 0, 0, 0, 0]);
-    g.push(vec![3, 0, 0, 0, 0, 0, 0, 0, 3]);
+    g.push("+.......+".into());
+    g.push(".........".into());
+    g.push(".#.......".into());
+    g.push(".....AA..".into());
+    g.push(".....AA..".into());
+    g.push(".####....".into());
+    g.push(".........".into());
+    g.push(".........".into());
+    g.push(".........".into());
+    g.push("+.......+".into());
+    g
+}
+
+fn print_i64() {
+    let grid = aoc::parse_grid_to(&make_grid(), |x| match x {
+        '.' => 0,
+        '#' => 1,
+        'A' => 2,
+        '+' => 3,
+        _ => panic!(),
+    });
     let mut gd = aoc::PrintGridDrawer::new(|x| match x {
         0 => '.',
         1 => '#',
@@ -20,23 +31,13 @@ fn print_i64() {
         3 => '+',
         _ => panic!(),
     });
-    gd.draw(&g);
+    gd.draw(&grid);
 }
 
 fn print_char() {
-    let mut g = vec![];
-    g.push("+.......+".chars().collect());
-    g.push(".........".chars().collect());
-    g.push(".#.......".chars().collect());
-    g.push(".....AA..".chars().collect());
-    g.push(".....AA..".chars().collect());
-    g.push(".####....".chars().collect());
-    g.push(".........".chars().collect());
-    g.push(".........".chars().collect());
-    g.push(".........".chars().collect());
-    g.push("+.......+".chars().collect());
+    let grid = aoc::parse_grid(&make_grid());
     let mut gd = aoc::PrintGridDrawer::new(|x| x);
-    gd.draw(&g);
+    gd.draw(&grid);
 }
 
 fn main() {

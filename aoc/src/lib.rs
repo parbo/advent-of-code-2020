@@ -55,6 +55,22 @@ pub fn split(s: &str, pred: fn(char) -> bool) -> Vec<&str> {
         .collect()
 }
 
+pub fn parse_grid(lines: &[String]) -> Vec<Vec<char>> {
+    lines.iter().map(|x| x.chars().collect()).collect()
+}
+
+pub fn parse_grid_to<T>(lines: &[String], f: fn(char) -> T) -> Vec<Vec<T>> {
+    lines.iter().map(|x| x.chars().map(f).collect()).collect()
+}
+
+pub fn parse_str_grid(lines: &[&str]) -> Vec<Vec<char>> {
+    lines.iter().map(|x| x.chars().collect()).collect()
+}
+
+pub fn parse_str_grid_to<T>(lines: &[&str], f: fn(char) -> T) -> Vec<Vec<T>> {
+    lines.iter().map(|x| x.chars().map(f).collect()).collect()
+}
+
 pub fn get_char(s: &str, ix: usize) -> Option<char> {
     s.chars().nth(ix)
 }

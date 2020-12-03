@@ -1,5 +1,4 @@
 use aoc;
-use std::iter::*;
 
 fn slope(forest: &Vec<Vec<char>>, xx: usize, yy: usize) -> i64 {
     let mut x = 0;
@@ -30,7 +29,7 @@ fn part2(f: &Vec<Vec<char>>) -> i64 {
 }
 
 fn parse(lines: &[String]) -> Vec<Vec<char>> {
-    lines.iter().map(|x| x.chars().collect()).collect()
+    aoc::parse_grid(lines)
 }
 
 fn main() {
