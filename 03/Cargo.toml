@@ -1,0 +1,11 @@
+[package]
+name = 'day03'
+version = '0.0.1'
+edition = '2018'
+
+[dependencies]
+aoc = {path = "../aoc"}
+
+[[bin]]
+name = 'day03'
+path = 'main.rs'
