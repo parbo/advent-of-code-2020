@@ -179,15 +179,15 @@ pub fn grid_to_graph<T>(
             let p: Point = [x as i64, y as i64];
             let c = &grid[y][x];
             if is_node(&p, &c) {
-		let gp = graph.add_node(p);
+                let gp = graph.add_node(p);
                 for d in &directions {
                     let np = point_add(p, *d);
                     if np[0] >= 0 && np[0] < xsize as i64 && np[1] >= 0 && np[1] < ysize as i64 {
                         let nc = &grid[np[1] as usize][np[0] as usize];
                         if is_node(&np, &nc) {
                             if let Some(e) = get_edge(&p, &c, &np, &nc) {
-				let gnp = graph.add_node(np);
-				graph.add_edge(gp, gnp, e);
+                                let gnp = graph.add_node(np);
+                                graph.add_edge(gp, gnp, e);
                             }
                         }
                     }
@@ -197,6 +197,20 @@ pub fn grid_to_graph<T>(
     }
 
     graph
+}
+
+pub fn astar(
+    graph: &UnGraphMap<Point, i64>,
+    start: Point,
+    goal: Point,
+) -> Option<(i64, Vec<Point>)> {
+    petgraph::algo::astar(
+        &graph,
+        start,
+        |finish| finish == goal,                             // is finish
+        |(_n1, _n2, e)| *e,                                  // true cost
+        |n| (goal[0] - n[0]).abs() + (goal[1] - n[1]).abs(), // estimated cost: manhattan distance}
+    )
 }
 
 pub fn get_char(s: &str, ix: usize) -> Option<char> {
