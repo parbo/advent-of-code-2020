@@ -1,4 +1,5 @@
 use aoc;
+use aoc::Itertools;
 use std::collections::HashMap;
 
 fn is_valid(p: &HashMap<String, String>) -> bool {
@@ -77,19 +78,13 @@ fn part2(passports: &Vec<HashMap<String, String>>) -> usize {
 }
 
 fn parse(lines: &[String]) -> Vec<HashMap<String, String>> {
-    let mut joined = vec![];
-    let mut tmp = vec![];
-    for line in lines {
-        if line.len() == 0 {
-            joined.push(tmp.join(" "));
-            tmp.clear();
-            continue;
-        }
-        tmp.push(line.clone());
-    }
-    if tmp.len() > 0 {
-        joined.push(tmp.join(" "));
-    }
+    let joined: Vec<_> = lines
+        .iter()
+        .group_by(|line| line.len() > 0)
+        .into_iter()
+        .map(|(_key, mut group)| group.join(" "))
+        .filter(|s| s.len() > 0)
+        .collect();
     let mut passports = vec![];
     for passport in joined {
         let mut map = HashMap::new();

@@ -23,6 +23,7 @@ pub use num::integer::*;
 pub use petgraph::graphmap::UnGraphMap;
 pub use serde_scan::from_str;
 pub use serde_scan::scan;
+pub use itertools::Itertools;
 
 pub type Point = self::vecmath::Vector2<i64>;
 pub type FPoint = self::vecmath::Vector2<f64>;
