@@ -81,7 +81,7 @@ pub static NORTH_WEST: Point = [-1, -1];
 pub static UP_LEFT: Point = NORTH_WEST;
 
 lazy_static! {
-    pub static ref DIRECTIONS: Vec<Point> = { vec![NORTH, EAST, SOUTH, WEST] };
+    pub static ref DIRECTIONS: Vec<Point> = vec![NORTH, EAST, SOUTH, WEST];
     pub static ref DIRECTIONS_INCL_DIAGONALS: Vec<Point> = {
         vec![
             NORTH, NORTH_EAST, EAST, SOUTH_EAST, SOUTH, SOUTH_WEST, WEST, NORTH_WEST,
