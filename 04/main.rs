@@ -10,99 +10,62 @@ fn is_valid(p: &HashMap<String, String>) -> bool {
 }
 
 fn is_valid_details(p: &HashMap<String, String>) -> bool {
-    if !is_valid(p) {
-        false
-    } else {
-        // byr (Birth Year) - four digits; at least 1920 and at most 2002.
-        // iyr (Issue Year) - four digits; at least 2010 and at most 2020.
-        // eyr (Expiration Year) - four digits; at least 2020 and at most 2030.
-        // hgt (Height) - a number followed by either cm or in:
-        //     If cm, the number must be at least 150 and at most 193.
-        //     If in, the number must be at least 59 and at most 76.
-        // hcl (Hair Color) - a # followed by exactly six characters 0-9 or a-f.
-        // ecl (Eye Color) - exactly one of: amb blu brn gry grn hzl oth.
-        // pid (Passport ID) - a nine-digit number, including leading zeroes.
-        // cid (Country ID) - ignored, missing or not.
-        for (k, v) in p {
+    is_valid(p)
+        && p.iter().all(|(k, v)| {
             match k.as_str() {
-                "byr" => {
-                    let year = v.parse::<i64>().unwrap();
-                    if year < 1920 || year > 2002 {
-                        return false;
-                    }
-                }
-                "iyr" => {
-                    let year = v.parse::<i64>().unwrap();
-                    if year < 2010 || year > 2020 {
-                        return false;
-                    }
-                }
-                "eyr" => {
-                    let year = v.parse::<i64>().unwrap();
-                    if year < 2020 || year > 2030 {
-                        return false;
-                    }
-                }
+                "byr" => v
+                    .parse::<usize>()
+                    .map_or(false, |year| year >= 1920 && year <= 2002),
+                "iyr" => v
+                    .parse::<usize>()
+                    .map_or(false, |year| year >= 2010 && year <= 2020),
+                "eyr" => v
+                    .parse::<usize>()
+                    .map_or(false, |year| year >= 2020 && year <= 2030),
                 "hgt" => {
                     if v.ends_with("cm") {
-                        let height = v[0..v.len() - 2].parse::<i64>().unwrap();
-                        if height < 150 || height > 193 {
-                            return false;
-                        }
+                        v[0..v.len() - 2]
+                            .parse::<usize>()
+                            .map_or(false, |height| height >= 150 && height <= 193)
                     } else if v.ends_with("in") {
-                        let height = v[0..v.len() - 2].parse::<i64>().unwrap();
-                        if height < 59 || height > 76 {
-                            return false;
-                        }
+                        v[0..v.len() - 2]
+                            .parse::<usize>()
+                            .map_or(false, |height| height >= 59 && height <= 76)
                     } else {
-                        return false;
+                        false
                     }
                 }
                 "hcl" => {
-                    if v.len() != 7 || v.chars().nth(0).unwrap() != '#' {
-                        return false;
-                    }
-                    for c in v.chars().skip(1) {
-                        if !(c.is_numeric()
-                            || c == 'a'
-                            || c == 'b'
-                            || c == 'c'
-                            || c == 'd'
-                            || c == 'e'
-                            || c == 'f')
-                        {
-                            return false;
-                        }
-                    }
+                    v.len() == 7
+                        && v.chars().nth(0).unwrap() == '#'
+                        && v.chars()
+                            .skip(1)
+                            .filter(|&c| {
+                                c.is_numeric()
+                                    || c == 'a'
+                                    || c == 'b'
+                                    || c == 'c'
+                                    || c == 'd'
+                                    || c == 'e'
+                                    || c == 'f'
+                            })
+                            .count()
+                            == 6
                 }
                 "ecl" => {
-                    if !(v == "amb"
+                    v == "amb"
                         || v == "blu"
                         || v == "brn"
                         || v == "gry"
                         || v == "grn"
                         || v == "hzl"
-                        || v == "oth")
-                    {
-                        return false;
-                    }
+                        || v == "oth"
                 }
-                "pid" => {
-                    if v.len() != 9 {
-                        return false;
-                    }
-                    if v.chars().filter(|c| !c.is_numeric()).count() > 0 {
-                        return false;
-                    }
-                }
-                "cid" => {}
-                _ => {
-                    return false;
-                }
+                "pid" => v.chars().filter(|c| c.is_numeric()).count() == 9,
+                "cid" => true,
+                _ => false,
             }
-        }
-        true
-    }
+        })
 }
 
 fn part1(passports: &Vec<HashMap<String, String>>) -> usize {
