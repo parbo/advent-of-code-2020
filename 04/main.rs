@@ -76,24 +76,22 @@ fn part2(passports: &Vec<HashMap<String, String>>) -> usize {
 }
 
 fn parse(lines: &[String]) -> Vec<HashMap<String, String>> {
-    let joined: Vec<_> = lines
+    lines
         .iter()
         .group_by(|line| line.len() > 0)
         .into_iter()
         .map(|(_key, mut group)| group.join(" "))
         .filter(|s| s.len() > 0)
-        .collect();
-    let mut passports = vec![];
-    for passport in joined {
-        let mut map = HashMap::new();
-        let parts = aoc::split(&passport, |c| c == ' ');
-        for part in parts {
-            let thing = aoc::split(&part, |c| c == ':');
-            map.insert(thing[0].to_string(), thing[1].to_string());
-        }
-        passports.push(map);
-    }
-    passports
+        .map(|passport| {
+            aoc::split(&passport, |c| c == ' ')
+                .iter()
+                .map(|part| {
+                    let x = aoc::split(&part, |c| c == ':');
+                    (x[0].to_string(), x[1].to_string())
+                })
+                .collect()
+        })
+        .collect()
 }
 
 fn main() {
