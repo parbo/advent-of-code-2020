@@ -1,11 +1,10 @@
-use aoc;
 use std::iter::*;
 
-fn part1(_: &Vec<i64>) -> i64 {
+fn part1(_: &[i64]) -> i64 {
     0
 }
 
-fn part2(_: &Vec<i64>) -> i64 {
+fn part2(_: &[i64]) -> i64 {
     0
 }
 

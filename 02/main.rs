@@ -36,11 +36,11 @@ impl Policy {
     }
 }
 
-fn part1(passwords: &Vec<Policy>) -> usize {
+fn part1(passwords: &[Policy]) -> usize {
     passwords.iter().filter(|p| p.is_valid()).count()
 }
 
-fn part2(passwords: &Vec<Policy>) -> usize {
+fn part2(passwords: &[Policy]) -> usize {
     passwords.iter().filter(|p| p.is_valid_updated()).count()
 }
 

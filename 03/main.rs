@@ -1,30 +1,28 @@
-use aoc;
-
-fn slope(forest: &Vec<Vec<char>>, xx: usize, yy: usize) -> i64 {
+fn slope(forest: &[Vec<char>], xx: usize, yy: usize) -> i64 {
     let mut x = 0;
     let mut y = 0;
     let mut trees = 0;
     let w = forest[0].len();
     if forest[y][x] == '#' {
-        trees = trees + 1;
+        trees += 1;
     }
     loop {
-        x = x + xx;
-        y = y + yy;
+        x += xx;
+        y += yy;
         if y >= forest.len() {
             return trees;
         }
         if forest[y][x % w] == '#' {
-            trees = trees + 1;
+            trees += 1;
         }
     }
 }
 
-fn part1(forest: &Vec<Vec<char>>) -> i64 {
+fn part1(forest: &[Vec<char>]) -> i64 {
     slope(forest, 3, 1)
 }
 
-fn part2(f: &Vec<Vec<char>>) -> i64 {
+fn part2(f: &[Vec<char>]) -> i64 {
     slope(f, 1, 1) * slope(f, 3, 1) * slope(f, 5, 1) * slope(f, 7, 1) * slope(f, 1, 2)
 }
 

@@ -1,5 +1,3 @@
-use num;
-use pancurses;
 use std::collections::HashMap;
 use std::env;
 use std::error;
@@ -139,7 +137,7 @@ impl From<ParseIntError> for ParseError {
 pub fn split(s: &str, pred: fn(char) -> bool) -> Vec<&str> {
     s.split(pred)
         .map(|w| w.trim())
-        .filter(|x| x.len() > 0)
+        .filter(|x| !x.is_empty())
         .collect()
 }
 
@@ -160,7 +158,7 @@ pub fn parse_str_grid_to<T>(lines: &[&str], f: fn(char) -> T) -> Vec<Vec<T>> {
 }
 
 pub fn grid_to_graph<T>(
-    grid: &Vec<Vec<T>>,
+    grid: &[Vec<T>],
     is_node: fn(&Point, &T) -> bool,
     get_edge: fn(&Point, &T, &Point, &T) -> Option<i64>,
     directions: usize,
@@ -234,12 +232,10 @@ pub fn cum_sum<T: num::Num + Copy>(a: &[T]) -> Vec<T> {
 pub fn range_sum_inclusive<T: num::Num + Copy>(cum_sum: &[T], a: usize, b: usize) -> T {
     if b < a {
         T::zero()
+    } else if a == 0 {
+        cum_sum[b]
     } else {
-        if a == 0 {
-            cum_sum[b]
-        } else {
-            cum_sum[b] - cum_sum[a - 1]
-        }
+        cum_sum[b] - cum_sum[a - 1]
     }
 }
 
@@ -256,7 +252,7 @@ pub trait Grid<T> {
     fn extents(&self) -> ((i64, i64), (i64, i64));
 }
 
-impl Grid<i64> for HashMap<(i64, i64), i64> {
+impl<S: ::std::hash::BuildHasher> Grid<i64> for HashMap<(i64, i64), i64, S> {
     fn get_value(&self, pos: (i64, i64)) -> Option<i64> {
         if let Some(x) = self.get(&pos) {
             Some(*x)
@@ -273,7 +269,7 @@ impl Grid<i64> for HashMap<(i64, i64), i64> {
     }
 }
 
-impl Grid<char> for HashMap<(i64, i64), char> {
+impl<S: ::std::hash::BuildHasher> Grid<char> for HashMap<(i64, i64), char, S> {
     fn get_value(&self, pos: (i64, i64)) -> Option<char> {
         if let Some(x) = self.get(&pos) {
             Some(*x)
@@ -301,13 +297,11 @@ impl Grid<i64> for Vec<Vec<i64>> {
         None
     }
     fn extents(&self) -> ((i64, i64), (i64, i64)) {
-        if self.len() > 0 {
-            if self[0].len() > 0 {
-                return (
-                    (0, (self[0].len() - 1) as i64),
-                    (0, (self.len() - 1) as i64),
-                );
-            }
+        if !self.is_empty() && !self[0].is_empty() {
+            return (
+                (0, (self[0].len() - 1) as i64),
+                (0, (self.len() - 1) as i64),
+            );
         }
         ((0, 0), (0, 0))
     }
@@ -324,13 +318,11 @@ impl Grid<char> for Vec<Vec<char>> {
         None
     }
     fn extents(&self) -> ((i64, i64), (i64, i64)) {
-        if self.len() > 0 {
-            if self[0].len() > 0 {
-                return (
-                    (0, (self[0].len() - 1) as i64),
-                    (0, (self.len() - 1) as i64),
-                );
-            }
+        if !self.is_empty() && !self[0].is_empty() {
+            return (
+                (0, (self[0].len() - 1) as i64),
+                (0, (self.len() - 1) as i64),
+            );
         }
         ((0, 0), (0, 0))
     }

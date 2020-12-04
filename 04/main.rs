@@ -1,4 +1,3 @@
-use aoc;
 use aoc::Itertools;
 use std::collections::HashMap;
 
@@ -37,7 +36,7 @@ fn is_valid_details(p: &HashMap<String, String>) -> bool {
             }
             "hcl" => {
                 v.len() == 7
-                    && v.chars().nth(0).unwrap() == '#'
+                    && v.starts_with('#')
                     && v.chars()
                         .skip(1)
                         .filter(|&c| {
@@ -67,21 +66,21 @@ fn is_valid_details(p: &HashMap<String, String>) -> bool {
         })
 }
 
-fn part1(passports: &Vec<HashMap<String, String>>) -> usize {
+fn part1(passports: &[HashMap<String, String>]) -> usize {
     passports.iter().filter(|x| is_valid(x)).count()
 }
 
-fn part2(passports: &Vec<HashMap<String, String>>) -> usize {
+fn part2(passports: &[HashMap<String, String>]) -> usize {
     passports.iter().filter(|x| is_valid_details(x)).count()
 }
 
 fn parse(lines: &[String]) -> Vec<HashMap<String, String>> {
     lines
         .iter()
-        .group_by(|line| line.len() > 0)
+        .group_by(|line| !line.is_empty())
         .into_iter()
         .map(|(_key, mut group)| group.join(" "))
-        .filter(|s| s.len() > 0)
+        .filter(|s| !s.is_empty())
         .map(|passport| {
             aoc::split(&passport, |c| c == ' ')
                 .iter()

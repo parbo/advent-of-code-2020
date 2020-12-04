@@ -1,7 +1,6 @@
-use aoc;
 use std::iter::*;
 
-fn part1(v: &Vec<i64>) -> i64 {
+fn part1(v: &[i64]) -> i64 {
     for i in 0..v.len() {
         for j in i + 1..v.len() {
             if v[i] + v[j] == 2020 {
@@ -12,7 +11,7 @@ fn part1(v: &Vec<i64>) -> i64 {
     0
 }
 
-fn part2(v: &Vec<i64>) -> i64 {
+fn part2(v: &[i64]) -> i64 {
     for i in 0..v.len() {
         for j in i + 1..v.len() {
             for k in j + 1..v.len() {
@@ -38,14 +37,4 @@ fn main() {
         part2(&parsed)
     };
     println!("{}", result);
-}
-
-#[cfg(test)]
-mod tests {
-    // use super::part1;
-
-    // #[test]
-    // fn test_part1() {
-    //     assert_eq!(part1(&vec![0]), 0);
-    // }
 }
