@@ -10,7 +10,8 @@ fn is_valid(p: &HashMap<String, String>) -> bool {
 }
 
 fn between(s: &str, least: usize, most: usize) -> bool {
-    s.parse::<usize>().map_or(false, |v| v >= least && v <= most)
+    s.parse::<usize>()
+        .map_or(false, |v| v >= least && v <= most)
 }
 
 fn is_valid_details(p: &HashMap<String, String>) -> bool {
@@ -33,27 +34,11 @@ fn is_valid_details(p: &HashMap<String, String>) -> bool {
                     && v.starts_with('#')
                     && v.chars()
                         .skip(1)
-                        .filter(|&c| {
-                            c.is_numeric()
-                                || c == 'a'
-                                || c == 'b'
-                                || c == 'c'
-                                || c == 'd'
-                                || c == 'e'
-                                || c == 'f'
-                        })
+                        .filter(|&c| c.is_numeric() || ['a', 'b', 'c', 'd', 'e', 'f'].contains(&c))
                         .count()
                         == 6
             }
-            "ecl" => {
-                v == "amb"
-                    || v == "blu"
-                    || v == "brn"
-                    || v == "gry"
-                    || v == "grn"
-                    || v == "hzl"
-                    || v == "oth"
-            }
+            "ecl" => ["amb", "blu", "brn", "gry", "grn","hzl", "oth"].contains(&v.as_str()),
             "pid" => v.len() == 9 && v.chars().filter(|c| c.is_numeric()).count() == 9,
             "cid" => true,
             _ => false,
