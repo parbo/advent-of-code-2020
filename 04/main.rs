@@ -9,12 +9,11 @@ fn is_valid(p: &HashMap<String, String>) -> bool {
     }
 }
 
-fn between(s: &str, least: usize, most: usize) -> bool {
-    s.parse::<usize>()
-        .map_or(false, |v| v >= least && v <= most)
-}
-
 fn is_valid_details(p: &HashMap<String, String>) -> bool {
+    let between = |s: &str, least, most| {
+	s.parse::<usize>()
+            .map_or(false, |v| v >= least && v <= most)
+    };
     is_valid(p)
         && p.iter().all(|(k, v)| match k.as_str() {
             "byr" => between(v, 1920, 2002),
