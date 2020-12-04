@@ -12,60 +12,58 @@ fn is_valid(p: &HashMap<String, String>) -> bool {
 
 fn is_valid_details(p: &HashMap<String, String>) -> bool {
     is_valid(p)
-        && p.iter().all(|(k, v)| {
-            match k.as_str() {
-                "byr" => v
-                    .parse::<usize>()
-                    .map_or(false, |year| year >= 1920 && year <= 2002),
-                "iyr" => v
-                    .parse::<usize>()
-                    .map_or(false, |year| year >= 2010 && year <= 2020),
-                "eyr" => v
-                    .parse::<usize>()
-                    .map_or(false, |year| year >= 2020 && year <= 2030),
-                "hgt" => {
-                    if v.ends_with("cm") {
-                        v[0..v.len() - 2]
-                            .parse::<usize>()
-                            .map_or(false, |height| height >= 150 && height <= 193)
-                    } else if v.ends_with("in") {
-                        v[0..v.len() - 2]
-                            .parse::<usize>()
-                            .map_or(false, |height| height >= 59 && height <= 76)
-                    } else {
-                        false
-                    }
+        && p.iter().all(|(k, v)| match k.as_str() {
+            "byr" => v
+                .parse::<usize>()
+                .map_or(false, |year| year >= 1920 && year <= 2002),
+            "iyr" => v
+                .parse::<usize>()
+                .map_or(false, |year| year >= 2010 && year <= 2020),
+            "eyr" => v
+                .parse::<usize>()
+                .map_or(false, |year| year >= 2020 && year <= 2030),
+            "hgt" => {
+                if v.ends_with("cm") {
+                    v[0..v.len() - 2]
+                        .parse::<usize>()
+                        .map_or(false, |height| height >= 150 && height <= 193)
+                } else if v.ends_with("in") {
+                    v[0..v.len() - 2]
+                        .parse::<usize>()
+                        .map_or(false, |height| height >= 59 && height <= 76)
+                } else {
+                    false
                 }
-                "hcl" => {
-                    v.len() == 7
-                        && v.chars().nth(0).unwrap() == '#'
-                        && v.chars()
-                            .skip(1)
-                            .filter(|&c| {
-                                c.is_numeric()
-                                    || c == 'a'
-                                    || c == 'b'
-                                    || c == 'c'
-                                    || c == 'd'
-                                    || c == 'e'
-                                    || c == 'f'
-                            })
-                            .count()
-                            == 6
-                }
-                "ecl" => {
-                    v == "amb"
-                        || v == "blu"
-                        || v == "brn"
-                        || v == "gry"
-                        || v == "grn"
-                        || v == "hzl"
-                        || v == "oth"
-                }
-                "pid" => v.chars().filter(|c| c.is_numeric()).count() == 9,
-                "cid" => true,
-                _ => false,
             }
+            "hcl" => {
+                v.len() == 7
+                    && v.chars().nth(0).unwrap() == '#'
+                    && v.chars()
+                        .skip(1)
+                        .filter(|&c| {
+                            c.is_numeric()
+                                || c == 'a'
+                                || c == 'b'
+                                || c == 'c'
+                                || c == 'd'
+                                || c == 'e'
+                                || c == 'f'
+                        })
+                        .count()
+                        == 6
+            }
+            "ecl" => {
+                v == "amb"
+                    || v == "blu"
+                    || v == "brn"
+                    || v == "gry"
+                    || v == "grn"
+                    || v == "hzl"
+                    || v == "oth"
+            }
+            "pid" => v.chars().filter(|c| c.is_numeric()).count() == 9,
+            "cid" => true,
+            _ => false,
         })
 }
 
