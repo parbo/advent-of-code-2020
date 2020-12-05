@@ -3,8 +3,8 @@ use std::iter::*;
 fn find_seat(bp: &[char]) -> (i64, i64) {
     let mut start = 0;
     let mut end = 128;
-    for i in 0..7 {
-        match bp[i] {
+    for item in bp.iter().take(7) {
+        match item {
             'F' => end -= (end - start) / 2,
             'B' => start += (end - start) / 2,
             _ => panic!(),
@@ -12,8 +12,8 @@ fn find_seat(bp: &[char]) -> (i64, i64) {
     }
     let mut cstart = 0;
     let mut cend = 8;
-    for i in 7..10 {
-        match bp[i] {
+    for item in bp.iter().skip(7).take(3) {
+        match item {
             'L' => cend -= (cend - cstart) / 2,
             'R' => cstart += (cend - cstart) / 2,
             _ => panic!(),
@@ -40,7 +40,7 @@ fn part2(bps: &[Vec<char>]) -> i64 {
             seat.0 * 8 + seat.1
         })
         .collect();
-    ids.sort();
+    ids.sort_unstable();
     let mut last = None;
     for id in &ids {
         if let Some(l) = last {

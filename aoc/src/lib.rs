@@ -151,9 +151,9 @@ pub fn parse_grid_to<T>(lines: &[String], f: fn(char) -> T) -> Vec<Vec<T>> {
 
 pub fn parse_grid_to_sparse<T>(lines: &[String], f: fn(char) -> Option<T>) -> HashMap<Point, T> {
     let mut grid = HashMap::new();
-    for y in 0..lines.len() {
+    for (y, line) in lines.iter().enumerate() {
         let mut x = 0;
-        for c in lines[y].chars() {
+        for c in line.chars() {
             if let Some(t) = f(c) {
                 grid.insert([x as i64, y as i64], t);
             }
