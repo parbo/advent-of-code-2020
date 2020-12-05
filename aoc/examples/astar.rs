@@ -1,5 +1,6 @@
 use aoc;
 use aoc::GridDrawer;
+use aoc::Grid;
 
 fn make_grid() -> Vec<String> {
     let mut g = vec![];
@@ -23,7 +24,7 @@ fn astar_char() {
     let f: aoc::Point = [1, 7];
     if let Some((_cost, path)) = aoc::astar(&graph, a, f) {
         for point in &path {
-            grid[point[1] as usize][point[0] as usize] = '*';
+            grid.set_value(*point, '*');
         }
     }
     let mut gd = aoc::PrintGridDrawer::new(|x| x);

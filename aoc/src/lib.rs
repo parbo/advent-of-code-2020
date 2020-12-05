@@ -15,13 +15,13 @@ extern crate lazy_static;
 
 extern crate vecmath;
 
+pub use itertools::Itertools;
 pub use mod_exp::mod_exp;
 pub use modinverse::modinverse;
 pub use num::integer::*;
 pub use petgraph::graphmap::UnGraphMap;
 pub use serde_scan::from_str;
 pub use serde_scan::scan;
-pub use itertools::Itertools;
 
 pub type Point = self::vecmath::Vector2<i64>;
 pub type FPoint = self::vecmath::Vector2<f64>;
@@ -248,47 +248,58 @@ pub fn range_sum<T: num::Num + Copy>(cum_sum: &[T], a: usize, b: usize) -> T {
 }
 
 pub trait Grid<T> {
-    fn get_value(&self, pos: (i64, i64)) -> Option<T>;
-    fn extents(&self) -> ((i64, i64), (i64, i64));
+    fn get_value(&self, pos: Point) -> Option<T>;
+    fn set_value(&mut self, pos: Point, value: T);
+    fn extents(&self) -> (Point, Point);
 }
 
-impl<S: ::std::hash::BuildHasher> Grid<i64> for HashMap<(i64, i64), i64, S> {
-    fn get_value(&self, pos: (i64, i64)) -> Option<i64> {
+impl<S: ::std::hash::BuildHasher> Grid<i64> for HashMap<Point, i64, S> {
+    fn get_value(&self, pos: Point) -> Option<i64> {
         if let Some(x) = self.get(&pos) {
             Some(*x)
         } else {
             None
         }
     }
-    fn extents(&self) -> ((i64, i64), (i64, i64)) {
-        let min_x = self.iter().map(|p| (p.0).0).min().unwrap();
-        let min_y = self.iter().map(|p| (p.0).1).min().unwrap();
-        let max_x = self.iter().map(|p| (p.0).0).max().unwrap();
-        let max_y = self.iter().map(|p| (p.0).1).max().unwrap();
-        ((min_x, max_x), (min_y, max_y))
+    fn set_value(&mut self, pos: Point, value: i64) {
+        if let Some(x) = self.get_mut(&pos) {
+            *x = value;
+        }
+    }
+    fn extents(&self) -> (Point, Point) {
+        let min_x = self.iter().map(|(p, _v)| p[0]).min().unwrap();
+        let min_y = self.iter().map(|(p, _v)| p[1]).min().unwrap();
+        let max_x = self.iter().map(|(p, _v)| p[0]).max().unwrap();
+        let max_y = self.iter().map(|(p, _v)| p[1]).max().unwrap();
+        ([min_x, max_x], [min_y, max_y])
     }
 }
 
-impl<S: ::std::hash::BuildHasher> Grid<char> for HashMap<(i64, i64), char, S> {
-    fn get_value(&self, pos: (i64, i64)) -> Option<char> {
+impl<S: ::std::hash::BuildHasher> Grid<char> for HashMap<Point, char, S> {
+    fn get_value(&self, pos: Point) -> Option<char> {
         if let Some(x) = self.get(&pos) {
             Some(*x)
         } else {
             None
         }
     }
-    fn extents(&self) -> ((i64, i64), (i64, i64)) {
-        let min_x = self.iter().map(|p| (p.0).0).min().unwrap();
-        let min_y = self.iter().map(|p| (p.0).1).min().unwrap();
-        let max_x = self.iter().map(|p| (p.0).0).max().unwrap();
-        let max_y = self.iter().map(|p| (p.0).1).max().unwrap();
-        ((min_x, max_x), (min_y, max_y))
+    fn set_value(&mut self, pos: Point, value: char) {
+        if let Some(x) = self.get_mut(&pos) {
+            *x = value;
+        }
+    }
+    fn extents(&self) -> (Point, Point) {
+        let min_x = self.iter().map(|(p, _v)| p[0]).min().unwrap();
+        let min_y = self.iter().map(|(p, _v)| p[1]).min().unwrap();
+        let max_x = self.iter().map(|(p, _v)| p[0]).max().unwrap();
+        let max_y = self.iter().map(|(p, _v)| p[1]).max().unwrap();
+        ([min_x, max_x], [min_y, max_y])
     }
 }
 
 impl Grid<i64> for Vec<Vec<i64>> {
-    fn get_value(&self, pos: (i64, i64)) -> Option<i64> {
-        let (x, y) = pos;
+    fn get_value(&self, pos: Point) -> Option<i64> {
+        let [x, y] = pos;
         if let Some(line) = self.get(y as usize) {
             if let Some(c) = line.get(x as usize) {
                 return Some(*c);
@@ -296,20 +307,28 @@ impl Grid<i64> for Vec<Vec<i64>> {
         }
         None
     }
-    fn extents(&self) -> ((i64, i64), (i64, i64)) {
+    fn set_value(&mut self, pos: Point, value: i64) {
+        let [x, y] = pos;
+        if let Some(line) = self.get_mut(y as usize) {
+            if let Some(c) = line.get_mut(x as usize) {
+                *c = value;
+            }
+        }
+    }
+    fn extents(&self) -> (Point, Point) {
         if !self.is_empty() && !self[0].is_empty() {
             return (
-                (0, (self[0].len() - 1) as i64),
-                (0, (self.len() - 1) as i64),
+                [0, (self[0].len() - 1) as i64],
+                [0, (self.len() - 1) as i64],
             );
         }
-        ((0, 0), (0, 0))
+        ([0, 0], [0, 0])
     }
 }
 
 impl Grid<char> for Vec<Vec<char>> {
-    fn get_value(&self, pos: (i64, i64)) -> Option<char> {
-        let (x, y) = pos;
+    fn get_value(&self, pos: Point) -> Option<char> {
+        let [x, y] = pos;
         if let Some(line) = self.get(y as usize) {
             if let Some(c) = line.get(x as usize) {
                 return Some(*c);
@@ -317,14 +336,22 @@ impl Grid<char> for Vec<Vec<char>> {
         }
         None
     }
-    fn extents(&self) -> ((i64, i64), (i64, i64)) {
+    fn set_value(&mut self, pos: Point, value: char) {
+        let [x, y] = pos;
+        if let Some(line) = self.get_mut(y as usize) {
+            if let Some(c) = line.get_mut(x as usize) {
+                *c = value;
+            }
+        }
+    }
+    fn extents(&self) -> (Point, Point) {
         if !self.is_empty() && !self[0].is_empty() {
             return (
-                (0, (self[0].len() - 1) as i64),
-                (0, (self.len() - 1) as i64),
+                [0, (self[0].len() - 1) as i64],
+                [0, (self.len() - 1) as i64],
             );
         }
-        ((0, 0), (0, 0))
+        ([0, 0], [0, 0])
     }
 }
 
@@ -374,10 +401,10 @@ where
     G: Grid<T>,
 {
     fn draw(&mut self, area: &G) {
-        let ((min_x, max_x), (min_y, max_y)) = area.extents();
+        let ([min_x, max_x], [min_y, max_y]) = area.extents();
         for y in min_y..=max_y {
             for x in min_x..=max_x {
-                let ch = if let Some(x) = area.get_value((x, y)) {
+                let ch = if let Some(x) = area.get_value([x, y]) {
                     self.to_char(x)
                 } else {
                     ' '
@@ -438,10 +465,10 @@ where
 {
     fn draw(&mut self, area: &G) {
         self.window.clear();
-        let ((min_x, max_x), (min_y, max_y)) = area.extents();
+        let ([min_x, max_x], [min_y, max_y]) = area.extents();
         for y in min_y..=max_y {
             for x in min_x..=max_x {
-                let ch = if let Some(x) = area.get_value((x, y)) {
+                let ch = if let Some(x) = area.get_value([x, y]) {
                     self.to_char(x)
                 } else {
                     ' '
