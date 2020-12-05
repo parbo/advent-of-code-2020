@@ -5,9 +5,7 @@ fn find_seat(bp: &[char]) -> (i64, i64) {
     let mut end = 128;
     for i in 0..7 {
         match bp[i] {
-            'F' => {
-                end -= (end - start) / 2;
-            }
+            'F' => end -= (end - start) / 2,
             'B' => start += (end - start) / 2,
             _ => panic!(),
         }
@@ -16,9 +14,7 @@ fn find_seat(bp: &[char]) -> (i64, i64) {
     let mut cend = 8;
     for i in 7..10 {
         match bp[i] {
-            'L' => {
-                cend -= (cend - cstart) / 2;
-            }
+            'L' => cend -= (cend - cstart) / 2,
             'R' => cstart += (cend - cstart) / 2,
             _ => panic!(),
         }
