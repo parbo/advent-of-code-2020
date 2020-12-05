@@ -27,27 +27,32 @@ fn find_seat(bp: &[char]) -> (i64, i64) {
 }
 
 fn part1(bps: &[Vec<char>]) -> i64 {
-    bps.iter().map(|bp| {
-        let seat = find_seat(&bp);
-        seat.0 * 8 + seat.1
-    })
-    .max().unwrap()
+    bps.iter()
+        .map(|bp| {
+            let seat = find_seat(&bp);
+            seat.0 * 8 + seat.1
+        })
+        .max()
+        .unwrap()
 }
 
 fn part2(bps: &[Vec<char>]) -> i64 {
-    let mut ids : Vec<_> = bps.iter().map(|bp| {
-        let seat = find_seat(&bp);
-        seat.0 * 8 + seat.1
-    }).collect();
+    let mut ids: Vec<_> = bps
+        .iter()
+        .map(|bp| {
+            let seat = find_seat(&bp);
+            seat.0 * 8 + seat.1
+        })
+        .collect();
     ids.sort();
     let mut last = None;
     for id in &ids {
-	if let Some(l) = last {
-	    if *id != l + 1 {
-		return *id - 1;
-	    }
-	}
-	last = Some(id);
+        if let Some(l) = last {
+            if *id != l + 1 {
+                return *id - 1;
+            }
+        }
+        last = Some(id);
     }
     0
 }
