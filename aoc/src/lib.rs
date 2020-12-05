@@ -270,7 +270,7 @@ impl<S: ::std::hash::BuildHasher> Grid<i64> for HashMap<Point, i64, S> {
         let min_y = self.iter().map(|(p, _v)| p[1]).min().unwrap();
         let max_x = self.iter().map(|(p, _v)| p[0]).max().unwrap();
         let max_y = self.iter().map(|(p, _v)| p[1]).max().unwrap();
-        ([min_x, max_x], [min_y, max_y])
+        ([min_x, min_y], [max_x, max_y])
     }
 }
 
@@ -292,7 +292,7 @@ impl<S: ::std::hash::BuildHasher> Grid<char> for HashMap<Point, char, S> {
         let min_y = self.iter().map(|(p, _v)| p[1]).min().unwrap();
         let max_x = self.iter().map(|(p, _v)| p[0]).max().unwrap();
         let max_y = self.iter().map(|(p, _v)| p[1]).max().unwrap();
-        ([min_x, max_x], [min_y, max_y])
+        ([min_x, min_y], [max_x, max_y])
     }
 }
 
@@ -317,8 +317,8 @@ impl Grid<i64> for Vec<Vec<i64>> {
     fn extents(&self) -> (Point, Point) {
         if !self.is_empty() && !self[0].is_empty() {
             return (
-                [0, (self[0].len() - 1) as i64],
-                [0, (self.len() - 1) as i64],
+                [0, 0],
+                [(self[0].len() - 1) as i64, (self.len() - 1) as i64],
             );
         }
         ([0, 0], [0, 0])
@@ -346,8 +346,8 @@ impl Grid<char> for Vec<Vec<char>> {
     fn extents(&self) -> (Point, Point) {
         if !self.is_empty() && !self[0].is_empty() {
             return (
-                [0, (self[0].len() - 1) as i64],
-                [0, (self.len() - 1) as i64],
+                [0, 0],
+                [(self[0].len() - 1) as i64, (self.len() - 1) as i64],
             );
         }
         ([0, 0], [0, 0])
@@ -400,7 +400,7 @@ where
     G: Grid<T>,
 {
     fn draw(&mut self, area: &G) {
-        let ([min_x, max_x], [min_y, max_y]) = area.extents();
+        let ([min_x, min_y], [max_x, max_y]) = area.extents();
         for y in min_y..=max_y {
             for x in min_x..=max_x {
                 let ch = if let Some(x) = area.get_value([x, y]) {
