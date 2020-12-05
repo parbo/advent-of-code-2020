@@ -149,12 +149,40 @@ pub fn parse_grid_to<T>(lines: &[String], f: fn(char) -> T) -> Vec<Vec<T>> {
     lines.iter().map(|x| x.chars().map(f).collect()).collect()
 }
 
+pub fn parse_grid_to_sparse<T>(lines: &[String], f: fn(char) -> Option<T>) -> HashMap<Point, T> {
+    let mut grid = HashMap::new();
+    for y in 0..lines.len() {
+        let mut x = 0;
+        for c in lines[y].chars() {
+            if let Some(t) = f(c) {
+                grid.insert([x as i64, y as i64], t);
+            }
+            x += 1;
+        }
+    }
+    grid
+}
+
 pub fn parse_str_grid(lines: &[&str]) -> Vec<Vec<char>> {
     lines.iter().map(|x| x.chars().collect()).collect()
 }
 
 pub fn parse_str_grid_to<T>(lines: &[&str], f: fn(char) -> T) -> Vec<Vec<T>> {
     lines.iter().map(|x| x.chars().map(f).collect()).collect()
+}
+
+pub fn parse_str_grid_to_sparse<T>(lines: &[&str], f: fn(char) -> Option<T>) -> HashMap<Point, T> {
+    let mut grid = HashMap::new();
+    for y in 0..lines.len() {
+        let mut x = 0;
+        for c in lines[y].chars() {
+            if let Some(t) = f(c) {
+                grid.insert([x as i64, y as i64], t);
+            }
+            x += 1;
+        }
+    }
+    grid
 }
 
 pub fn grid_to_graph<T>(
@@ -172,20 +200,23 @@ pub fn grid_to_graph<T>(
     let mut graph = UnGraphMap::new();
     let (min, max) = grid.extents();
 
-    for y in min[1]..max[1] {
-        for x in min[0]..max[0] {
+    for y in min[1]..=max[1] {
+        for x in min[0]..=max[0] {
             let p: Point = [x as i64, y as i64];
-            let c = &grid.get_value(p).unwrap();
-            if is_node(&p, &c) {
-                let gp = graph.add_node(p);
-                for d in &directions {
-                    let np = point_add(p, *d);
-                    if np[0] >= min[0] && np[0] < max[0] && np[1] >= min[1] && np[1] < max[1] {
-                        let nc = &grid.get_value(np).unwrap();
-                        if is_node(&np, &nc) {
-                            if let Some(e) = get_edge(&p, &c, &np, &nc) {
-                                let gnp = graph.add_node(np);
-                                graph.add_edge(gp, gnp, e);
+            if let Some(c) = grid.get_value(p) {
+                if is_node(&p, &c) {
+                    let gp = graph.add_node(p);
+                    for d in &directions {
+                        let np = point_add(p, *d);
+                        if np[0] >= min[0] && np[0] <= max[0] && np[1] >= min[1] && np[1] <= max[1]
+                        {
+                            if let Some(nc) = grid.get_value(np) {
+                                if is_node(&np, &nc) {
+                                    if let Some(e) = get_edge(&p, &c, &np, &nc) {
+                                        let gnp = graph.add_node(np);
+                                        graph.add_edge(gp, gnp, e);
+                                    }
+                                }
                             }
                         }
                     }
@@ -261,9 +292,7 @@ impl<S: ::std::hash::BuildHasher> Grid<i64> for HashMap<Point, i64, S> {
         }
     }
     fn set_value(&mut self, pos: Point, value: i64) {
-        if let Some(x) = self.get_mut(&pos) {
-            *x = value;
-        }
+        *self.entry(pos).or_insert(value) = value;
     }
     fn extents(&self) -> (Point, Point) {
         let min_x = self.iter().map(|(p, _v)| p[0]).min().unwrap();
@@ -283,9 +312,7 @@ impl<S: ::std::hash::BuildHasher> Grid<char> for HashMap<Point, char, S> {
         }
     }
     fn set_value(&mut self, pos: Point, value: char) {
-        if let Some(x) = self.get_mut(&pos) {
-            *x = value;
-        }
+        *self.entry(pos).or_insert(value) = value;
     }
     fn extents(&self) -> (Point, Point) {
         let min_x = self.iter().map(|(p, _v)| p[0]).min().unwrap();
