@@ -158,7 +158,7 @@ pub fn parse_str_grid_to<T>(lines: &[&str], f: fn(char) -> T) -> Vec<Vec<T>> {
 }
 
 pub fn grid_to_graph<T>(
-    grid: &[Vec<T>],
+    grid: &dyn Grid<T>,
     is_node: fn(&Point, &T) -> bool,
     get_edge: fn(&Point, &T, &Point, &T) -> Option<i64>,
     directions: usize,
@@ -170,19 +170,18 @@ pub fn grid_to_graph<T>(
     };
 
     let mut graph = UnGraphMap::new();
-    let ysize = grid.len();
-    let xsize = grid[0].len();
+    let (min, max) = grid.extents();
 
-    for y in 0..ysize {
-        for x in 0..xsize {
+    for y in min[1]..max[1] {
+        for x in min[0]..max[0] {
             let p: Point = [x as i64, y as i64];
-            let c = &grid[y][x];
+            let c = &grid.get_value(p).unwrap();
             if is_node(&p, &c) {
                 let gp = graph.add_node(p);
                 for d in &directions {
                     let np = point_add(p, *d);
-                    if np[0] >= 0 && np[0] < xsize as i64 && np[1] >= 0 && np[1] < ysize as i64 {
-                        let nc = &grid[np[1] as usize][np[0] as usize];
+                    if np[0] >= min[0] && np[0] < max[0] && np[1] >= min[1] && np[1] < max[1] {
+                        let nc = &grid.get_value(np).unwrap();
                         if is_node(&np, &nc) {
                             if let Some(e) = get_edge(&p, &c, &np, &nc) {
                                 let gnp = graph.add_node(np);
