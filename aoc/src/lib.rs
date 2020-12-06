@@ -141,56 +141,59 @@ pub fn split(s: &str, pred: fn(char) -> bool) -> Vec<&str> {
         .collect()
 }
 
-pub fn split_by_empty_line(lines: &[String]) -> Vec<Vec<String>> {
+pub fn split_by_empty_line<'a, I, J>(lines: I) -> Vec<Vec<&'a str>>
+where
+    I: IntoIterator<Item = &'a J>,
+    J: AsRef<str> + 'a,
+{
     lines
-        .iter()
-        .group_by(|line| !line.is_empty())
+        .into_iter()
+        .group_by(|line| !AsRef::as_ref(line).is_empty())
         .into_iter()
         .map(|(_, group)| {
             group
+                .map(|s| AsRef::as_ref(s))
                 .filter(|s| !s.is_empty())
-                .map(|s| s.to_string())
                 .collect::<Vec<_>>()
         })
         .filter(|g| !g.is_empty())
         .collect()
 }
 
-pub fn parse_grid(lines: &[String]) -> Vec<Vec<char>> {
-    lines.iter().map(|x| x.chars().collect()).collect()
+pub fn parse_grid<'a, I, J>(lines: I) -> Vec<Vec<char>>
+where
+    I: IntoIterator<Item = &'a J>,
+    J: AsRef<str> + 'a,
+{
+    lines
+        .into_iter()
+        .map(|x| AsRef::as_ref(x).chars().collect())
+        .collect()
 }
 
-pub fn parse_grid_to<T>(lines: &[String], f: fn(char) -> T) -> Vec<Vec<T>> {
-    lines.iter().map(|x| x.chars().map(f).collect()).collect()
+pub fn parse_grid_to<'a, I, J, T>(lines: I, f: fn(char) -> T) -> Vec<Vec<T>>
+where
+    I: IntoIterator<Item = &'a J>,
+    J: AsRef<str> + 'a,
+{
+    lines
+        .into_iter()
+        .map(|x| AsRef::as_ref(x).chars().map(f).collect())
+        .collect()
 }
 
-pub fn parse_grid_to_sparse<T>(lines: &[String], f: fn(char) -> Option<T>) -> HashMap<Point, T> {
+pub fn parse_grid_to_sparse<'a, I, J, T>(
+    lines: I,
+    f: fn(char) -> Option<T>,
+) -> HashMap<Point, T>
+where
+    I: IntoIterator<Item = &'a J>,
+    J: AsRef<str> + 'a,
+{
     let mut grid = HashMap::new();
-    for (y, line) in lines.iter().enumerate() {
+    for (y, line) in lines.into_iter().enumerate() {
         let mut x = 0;
-        for c in line.chars() {
-            if let Some(t) = f(c) {
-                grid.insert([x as i64, y as i64], t);
-            }
-            x += 1;
-        }
-    }
-    grid
-}
-
-pub fn parse_str_grid(lines: &[&str]) -> Vec<Vec<char>> {
-    lines.iter().map(|x| x.chars().collect()).collect()
-}
-
-pub fn parse_str_grid_to<T>(lines: &[&str], f: fn(char) -> T) -> Vec<Vec<T>> {
-    lines.iter().map(|x| x.chars().map(f).collect()).collect()
-}
-
-pub fn parse_str_grid_to_sparse<T>(lines: &[&str], f: fn(char) -> Option<T>) -> HashMap<Point, T> {
-    let mut grid = HashMap::new();
-    for y in 0..lines.len() {
-        let mut x = 0;
-        for c in lines[y].chars() {
+        for c in AsRef::as_ref(line).chars() {
             if let Some(t) = f(c) {
                 grid.insert([x as i64, y as i64], t);
             }
@@ -543,4 +546,21 @@ pub fn read_lines() -> (i32, Vec<String>) {
             .map(|x| x.trim_end_matches('\n').to_string())
             .collect(),
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_split_by_empty_line() {
+        let result =
+            split_by_empty_line(&["apa", "giraff", "", "elefant", "", "lejon", "tiger", ""]);
+        let expected = vec![
+            vec!["apa", "giraff"],
+            vec!["elefant"],
+            vec!["lejon", "tiger"],
+        ];
+        assert_eq!(result, expected);
+    }
 }
