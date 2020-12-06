@@ -18,8 +18,7 @@ fn parse(lines: &[String]) -> Vec<(usize, HashMap<char, usize>)> {
         .iter()
         .group_by(|line| !line.is_empty())
         .into_iter()
-        .map(|(_key, group)| -> Vec<_> { group.collect() })
-        .map(|group| group.iter().fold((0, HashMap::new()), |mut acc, person| {
+        .map(|(_key, group)| group.fold((0, HashMap::new()), |mut acc, person| {
 	    acc.0 += 1;
             person.chars().for_each(|answer| {
                 *acc.1.entry(answer).or_insert(0 as usize) += 1;
