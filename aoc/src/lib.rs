@@ -146,7 +146,12 @@ pub fn split_by_empty_line(lines: &[String]) -> Vec<Vec<String>> {
         .iter()
         .group_by(|line| !line.is_empty())
         .into_iter()
-        .map(|(_, group)| group.filter(|s| !s.is_empty()).map(|s| s.to_string()).collect::<Vec<_>>())
+        .map(|(_, group)| {
+            group
+                .filter(|s| !s.is_empty())
+                .map(|s| s.to_string())
+                .collect::<Vec<_>>()
+        })
         .filter(|g| !g.is_empty())
         .collect()
 }
