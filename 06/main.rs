@@ -14,24 +14,19 @@ fn part2(groups: &[(usize, HashMap<char, usize>)]) -> usize {
 }
 
 fn parse(lines: &[String]) -> Vec<(usize, HashMap<char, usize>)> {
-    let groups: Vec<_> = lines
+    lines
         .iter()
         .group_by(|line| !line.is_empty())
         .into_iter()
         .map(|(_key, group)| -> Vec<_> { group.collect() })
-        .collect();
-    let mut ret = vec![];
-    for group in groups {
-        let mut q = HashMap::new();
-        let num = group.len();
-        for person in group {
-            for answer in person.chars() {
-                *q.entry(answer).or_insert(0) += 1;
-            }
-        }
-        ret.push((num, q));
-    }
-    ret
+        .map(|group| group.iter().fold((0, HashMap::new()), |mut acc, person| {
+	    acc.0 += 1;
+            person.chars().for_each(|answer| {
+                *acc.1.entry(answer).or_insert(0 as usize) += 1;
+            });
+            acc
+        }))
+        .collect()
 }
 
 fn main() {
