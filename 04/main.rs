@@ -1,4 +1,3 @@
-use aoc::Itertools;
 use std::collections::HashMap;
 
 fn is_valid(p: &HashMap<String, String>) -> bool {
@@ -11,7 +10,7 @@ fn is_valid(p: &HashMap<String, String>) -> bool {
 
 fn is_valid_details(p: &HashMap<String, String>) -> bool {
     let between = |s: &str, least, most| {
-	s.parse::<usize>()
+        s.parse::<usize>()
             .map_or(false, |v| v >= least && v <= most)
     };
     is_valid(p)
@@ -37,7 +36,7 @@ fn is_valid_details(p: &HashMap<String, String>) -> bool {
                         .count()
                         == 6
             }
-            "ecl" => ["amb", "blu", "brn", "gry", "grn","hzl", "oth"].contains(&v.as_str()),
+            "ecl" => ["amb", "blu", "brn", "gry", "grn", "hzl", "oth"].contains(&v.as_str()),
             "pid" => v.len() == 9 && v.chars().filter(|c| c.is_numeric()).count() == 9,
             "cid" => true,
             _ => false,
@@ -53,12 +52,9 @@ fn part2(passports: &[HashMap<String, String>]) -> usize {
 }
 
 fn parse(lines: &[String]) -> Vec<HashMap<String, String>> {
-    lines
+    aoc::split_by_empty_line(lines)
         .iter()
-        .group_by(|line| !line.is_empty())
-        .into_iter()
-        .map(|(_key, mut group)| group.join(" "))
-        .filter(|s| !s.is_empty())
+        .map(|group| group.join(" "))
         .map(|passport| {
             aoc::split(&passport, |c| c == ' ')
                 .iter()

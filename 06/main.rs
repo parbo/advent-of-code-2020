@@ -1,4 +1,3 @@
-use aoc::Itertools;
 use std::collections::HashMap;
 use std::iter::*;
 
@@ -14,17 +13,17 @@ fn part2(groups: &[(usize, HashMap<char, usize>)]) -> usize {
 }
 
 fn parse(lines: &[String]) -> Vec<(usize, HashMap<char, usize>)> {
-    lines
+    aoc::split_by_empty_line(lines)
         .iter()
-        .group_by(|line| !line.is_empty())
-        .into_iter()
-        .map(|(_key, group)| group.fold((0, HashMap::new()), |mut acc, person| {
-	    acc.0 += 1;
-            person.chars().for_each(|answer| {
-                *acc.1.entry(answer).or_insert(0 as usize) += 1;
-            });
-            acc
-        }))
+        .map(|group| {
+            group.iter().fold((0, HashMap::new()), |mut acc, person| {
+                acc.0 += 1;
+                person.chars().for_each(|answer| {
+                    *acc.1.entry(answer).or_insert(0 as usize) += 1;
+                });
+                acc
+            })
+        })
         .collect()
 }
 
