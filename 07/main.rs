@@ -38,39 +38,23 @@ fn part2(rules: &[(String, Vec<(usize, String)>)]) -> i64 {
     sum_bags("shiny gold", rules) as i64 - 1
 }
 
-fn remove_bag(sin: &str) -> &str {
-    let s = if sin.ends_with(".") {
-        sin.trim_end_matches(".")
-    } else {
-        sin
-    };
-    if s.ends_with(" bag") {
-        s.trim_end_matches(" bag")
-    } else if s.ends_with(" bags") {
-        s.trim_end_matches(" bags")
-    } else {
-        s
-    }
-}
-
 fn parse(lines: &[String]) -> Vec<(String, Vec<(usize, String)>)> {
     lines
         .iter()
         .map(|x| {
-            let parts = x.split("contain").map(|x| x.trim()).collect::<Vec<_>>();
+            let parts = aoc::split(x, |c| c == ' ');
             (
-                remove_bag(parts[0]).to_string(),
-                aoc::split(parts[1], |c| c == ',')
+                parts[0..2].join(" "),
+                aoc::split(&parts[4..].join(" "), |c| c == ',')
                     .iter()
-                    .map(|x| remove_bag(x).to_string())
+                    .map(|x| aoc::split(x, |c| c == ' '))
                     .map(|x| {
-                        if x == "no other" {
-                            (0, x)
+                        if x[0] == "no" && x[1] == "other" {
+                            (0, x[0..2].join(" "))
                         } else {
-                            let parts = aoc::split(&x, |c| c == ' ');
                             (
-                                parts[0].parse::<usize>().unwrap(),
-                                parts[1..].join(" ").to_string(),
+                                x[0].parse::<usize>().unwrap(),
+                                x[1..3].join(" ").to_string(),
                             )
                         }
                     })
