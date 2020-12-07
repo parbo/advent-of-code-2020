@@ -25,6 +25,7 @@ pub use petgraph::graphmap::GraphMap;
 pub use petgraph::graph::UnGraph;
 pub use petgraph::graph::Graph;
 pub use petgraph::algo;
+pub use petgraph::visit;
 pub use serde_scan::from_str;
 pub use serde_scan::scan;
 
