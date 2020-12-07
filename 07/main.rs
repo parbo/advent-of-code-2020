@@ -54,7 +54,7 @@ fn parse(lines: &[String]) -> Vec<(String, Vec<(usize, String)>)> {
                         } else {
                             (
                                 x[0].parse::<usize>().unwrap(),
-                                x[1..3].join(" ").to_string(),
+                                x[1..3].join(" "),
                             )
                         }
                     })
