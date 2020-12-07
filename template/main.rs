@@ -25,7 +25,7 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
-    // use super::part1;
+    // use super::*;
 
     // #[test]
     // fn test_part1() {
