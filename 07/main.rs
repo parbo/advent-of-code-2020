@@ -42,12 +42,12 @@ fn parse(lines: &[String]) -> Vec<(String, Vec<(usize, String)>)> {
     lines
         .iter()
         .map(|x| {
-            let parts = aoc::split(x, |c| c == ' ');
+            let parts = aoc::split_str(x, "bags contain");
             (
-                parts[0..2].join(" "),
-                aoc::split(&parts[4..].join(" "), |c| c == ',')
+                parts[0].to_string(),
+                aoc::split_ch(&parts[1], ',')
                     .iter()
-                    .map(|x| aoc::split(x, |c| c == ' '))
+                    .map(|x| aoc::split_ch(x, ' '))
                     .map(|x| {
                         if x[0] == "no" && x[1] == "other" {
                             (0, x[0..2].join(" "))

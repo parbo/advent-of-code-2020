@@ -147,6 +147,20 @@ pub fn split(s: &str, pred: fn(char) -> bool) -> Vec<&str> {
         .collect()
 }
 
+pub fn split_ch(s: &str, c: char) -> Vec<&str> {
+    s.split(|x| x == c)
+        .map(|w| w.trim())
+        .filter(|x| !x.is_empty())
+        .collect()
+}
+
+pub fn split_str<'a>(s: &'a str, pat: &str) -> Vec<&'a str> {
+    s.split(pat)
+        .map(|w| w.trim())
+        .filter(|x| !x.is_empty())
+        .collect()
+}
+
 pub fn split_by_empty_line<'a, I, J>(lines: I) -> Vec<Vec<&'a str>>
 where
     I: IntoIterator<Item = &'a J>,
