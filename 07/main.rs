@@ -34,29 +34,25 @@ fn sum_bags(bag: &str, rules: &[(String, Vec<(usize, String)>)]) -> usize {
 }
 
 fn part2(rules: &[(String, Vec<(usize, String)>)]) -> i64 {
-    // off by one for some reason
+    // - 1 as we're not counting the "shiny gold" bag
     sum_bags("shiny gold", rules) as i64 - 1
 }
 
 fn parse(lines: &[String]) -> Vec<(String, Vec<(usize, String)>)> {
+    let rx1 = aoc::Regex::new(r"^(.*) bags contain").unwrap();
+    let rx2 = aoc::Regex::new(r"(\d+) (.+?) bags?").unwrap();
     lines
         .iter()
         .map(|x| {
-            let parts = aoc::split_str(x, "bags contain");
             (
-                parts[0].to_string(),
-                aoc::split_ch(&parts[1], ',')
-                    .iter()
-                    .map(|x| aoc::split_ch(x, ' '))
-                    .map(|x| {
-                        if x[0] == "no" && x[1] == "other" {
-                            (0, x[0..2].join(" "))
-                        } else {
-                            (
-                                x[0].parse::<usize>().unwrap(),
-                                x[1..3].join(" "),
-                            )
-                        }
+                rx1.captures(x)
+                    .and_then(|x| x.get(1)).map_or("", |m| m.as_str()).to_string(),
+                rx2.captures_iter(x)
+                    .map(|caps| {
+                        (
+                                caps.get(1).map_or(0, |m| m.as_str().parse::<usize>().unwrap()),
+                                caps.get(2).map_or("", |m| m.as_str()).to_string(),
+                        )
                     })
                     .collect(),
             )
