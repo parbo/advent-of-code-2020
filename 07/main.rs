@@ -1,20 +1,5 @@
 use std::iter::*;
 
-fn remove_bag(sin: &str) -> &str {
-    let s = if sin.ends_with(".") {
-        sin.trim_end_matches(".")
-    } else {
-        sin
-    };
-    if s.ends_with(" bag") {
-        s.trim_end_matches(" bag")
-    } else if s.ends_with(" bags") {
-        s.trim_end_matches(" bags")
-    } else {
-        s
-    }
-}
-
 fn part1(rules: &[(String, Vec<(usize, String)>)]) -> i64 {
     let mut graph = aoc::GraphMap::<&String, i32, aoc::Directed>::new();
     for (node, neighbors) in rules {
@@ -51,6 +36,21 @@ fn sum_bags(bag: &str, rules: &[(String, Vec<(usize, String)>)]) -> usize {
 fn part2(rules: &[(String, Vec<(usize, String)>)]) -> i64 {
     // off by one for some reason
     sum_bags("shiny gold", rules) as i64 - 1
+}
+
+fn remove_bag(sin: &str) -> &str {
+    let s = if sin.ends_with(".") {
+        sin.trim_end_matches(".")
+    } else {
+        sin
+    };
+    if s.ends_with(" bag") {
+        s.trim_end_matches(" bag")
+    } else if s.ends_with(" bags") {
+        s.trim_end_matches(" bags")
+    } else {
+        s
+    }
 }
 
 fn parse(lines: &[String]) -> Vec<(String, Vec<(usize, String)>)> {

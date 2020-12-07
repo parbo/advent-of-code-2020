@@ -19,7 +19,12 @@ pub use itertools::Itertools;
 pub use mod_exp::mod_exp;
 pub use modinverse::modinverse;
 pub use num::integer::*;
+pub use petgraph::*;
 pub use petgraph::graphmap::UnGraphMap;
+pub use petgraph::graphmap::GraphMap;
+pub use petgraph::graph::UnGraph;
+pub use petgraph::graph::Graph;
+pub use petgraph::algo;
 pub use serde_scan::from_str;
 pub use serde_scan::scan;
 
