@@ -551,9 +551,10 @@ where
 
 pub struct BitmapGridDrawer<F, T>
 where
-    F: Fn(T) -> (u8, u8, u8),
+    F: Fn(T) -> Vec<(u8, u8, u8)>,
 {
-    to_color: F,
+    sprite_dimension: (i64, i64),
+    to_sprite: F,
     basename: String,
     frame: usize,
     phantom: PhantomData<T>,
@@ -564,30 +565,35 @@ where
 // You can change the start number with the -start_number input option.
 impl<F, T> BitmapGridDrawer<F, T>
 where
-    F: Fn(T) -> (u8, u8, u8),
+    F: Fn(T) -> Vec<(u8, u8, u8)>,
 {
-    pub fn new(to_color: F, basename: &str) -> BitmapGridDrawer<F, T> {
+    pub fn new(
+        sprite_dimension: (i64, i64),
+        to_sprite: F,
+        basename: &str,
+    ) -> BitmapGridDrawer<F, T> {
         // TODO: error handling
         let path = Path::new(basename);
         if let Some(parent) = path.parent() {
             std::fs::create_dir_all(parent).expect("could not create folder");
         }
         BitmapGridDrawer {
-            to_color,
+            sprite_dimension,
+            to_sprite,
             frame: 1,
             basename: basename.into(),
             phantom: PhantomData,
         }
     }
 
-    fn to_color(&self, value: T) -> (u8, u8, u8) {
-        (self.to_color)(value)
+    fn to_sprite(&self, value: T) -> Vec<(u8, u8, u8)> {
+        (self.to_sprite)(value)
     }
 }
 
 impl<F, G, T> GridDrawer<G, T> for BitmapGridDrawer<F, T>
 where
-    F: Fn(T) -> (u8, u8, u8),
+    F: Fn(T) -> Vec<(u8, u8, u8)>,
     G: Grid<T>,
 {
     fn draw(&mut self, area: &G) {
@@ -607,21 +613,39 @@ where
         let ([min_x, min_y], [max_x, max_y]) = area.extents();
         let w = max_x - min_x + 1;
         let h = max_y - min_y + 1;
-        let header = format!("P6 {} {} 255\n", w, h);
-        let mut data = vec![];
-        data.reserve(header.len() + (w * h * 3) as usize);
-        data.extend(header.as_bytes());
+        let pixelw = w * self.sprite_dimension.0;
+        let pixelh = h * self.sprite_dimension.1;
+        let header = format!("P6 {} {} 255\n", pixelw, pixelh);
+        let hl = header.len();
+        let num_pixels = (pixelw * pixelh) as usize;
+        let mut pixels: Vec<(u8, u8, u8)> = vec![];
+        pixels.resize_with(num_pixels, || (255, 255, 255));
         for y in min_y..=max_y {
             for x in min_x..=max_x {
-                let (r, g, b) = if let Some(x) = area.get_value([x, y]) {
-                    self.to_color(x)
-                } else {
-                    (255, 255, 255)
+                if let Some(value) = area.get_value([x, y]) {
+                    let sprite = self.to_sprite(value);
+                    let mut yy = y * self.sprite_dimension.1;
+                    let mut xx = x * self.sprite_dimension.0;
+		    let xxx = xx;
+                    for col in &sprite {
+                        let pixel_offs = (yy * pixelw + xx) as usize;
+                        pixels[pixel_offs] = *col;
+                        xx += 1;
+                        if xx - xxx >= self.sprite_dimension.0 {
+                            xx = x * self.sprite_dimension.0;
+                            yy += 1
+                        }
+                    }
                 };
-                data.push(r);
-                data.push(g);
-                data.push(b);
             }
+        }
+        let mut data: Vec<u8> = vec![];
+        data.reserve(hl + 3 * pixels.len());
+        data.extend(header.as_bytes());
+        for (r, g, b) in &pixels {
+            data.push(*r);
+            data.push(*g);
+            data.push(*b);
         }
         file.write_all(&data).expect("failed to write data");
     }
