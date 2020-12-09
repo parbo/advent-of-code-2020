@@ -559,6 +559,9 @@ where
     phantom: PhantomData<T>,
 }
 
+// These can be converted to movies with:
+// ffmpeg -framerate 25 -i "basename_%06d.ppm" output
+// You can change the start number with the -start_number input option.
 impl<F, T> BitmapGridDrawer<F, T>
 where
     F: Fn(T) -> (u8, u8, u8),
