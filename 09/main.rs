@@ -27,8 +27,8 @@ fn part1(input: &[i64]) -> i64 {
     get_first_non_valid(input, 25)
 }
 
-fn part2(input: &[i64]) -> i64 {
-    let num = part1(input);
+fn find_weakness(input: &[i64], pl: usize) -> i64 {
+    let num = get_first_non_valid(input, pl);
     let cs = aoc::cum_sum(&input);
     for i in 0..input.len() {
 	for j in i..input.len() {
@@ -41,6 +41,10 @@ fn part2(input: &[i64]) -> i64 {
 	}
     }
     0
+}
+
+fn part2(input: &[i64]) -> i64 {
+    find_weakness(input, 25)
 }
 
 fn parse(lines: &[String]) -> Vec<i64> {
@@ -63,11 +67,12 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_part1() {
+    fn test_parts() {
         let input: Vec<i64> = vec![
             35, 20, 15, 25, 47, 40, 62, 55, 65, 95, 102, 117, 150, 182, 127, 219, 299, 277, 309,
             576,
         ];
         assert_eq!(get_first_non_valid(&input, 5), 127);
+        assert_eq!(find_weakness(&input, 5), 62);
     }
 }
