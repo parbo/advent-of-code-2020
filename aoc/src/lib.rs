@@ -8,7 +8,7 @@ use std::io::BufReader;
 use std::iter::*;
 use std::marker::PhantomData;
 use std::num::ParseIntError;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 #[macro_use]
 extern crate lazy_static;
@@ -19,16 +19,16 @@ pub use itertools::Itertools;
 pub use mod_exp::mod_exp;
 pub use modinverse::modinverse;
 pub use num::integer::*;
-pub use petgraph::*;
-pub use petgraph::graphmap::UnGraphMap;
-pub use petgraph::graphmap::GraphMap;
-pub use petgraph::graph::UnGraph;
-pub use petgraph::graph::Graph;
 pub use petgraph::algo;
+pub use petgraph::graph::Graph;
+pub use petgraph::graph::UnGraph;
+pub use petgraph::graphmap::GraphMap;
+pub use petgraph::graphmap::UnGraphMap;
 pub use petgraph::visit;
+pub use petgraph::*;
+pub use regex::Regex;
 pub use serde_scan::from_str;
 pub use serde_scan::scan;
-pub use regex::Regex;
 
 pub type Point = self::vecmath::Vector2<i64>;
 pub type FPoint = self::vecmath::Vector2<f64>;
@@ -203,10 +203,7 @@ where
         .collect()
 }
 
-pub fn parse_grid_to_sparse<'a, I, J, T>(
-    lines: I,
-    f: fn(char) -> Option<T>,
-) -> HashMap<Point, T>
+pub fn parse_grid_to_sparse<'a, I, J, T>(lines: I, f: fn(char) -> Option<T>) -> HashMap<Point, T>
 where
     I: IntoIterator<Item = &'a J>,
     J: AsRef<str> + 'a,
@@ -549,6 +546,81 @@ where
             }
         }
         self.window.refresh();
+    }
+}
+
+pub struct BitmapGridDrawer<F, T>
+where
+    F: Fn(T) -> (u8, u8, u8),
+{
+    to_color: F,
+    basename: String,
+    frame: usize,
+    phantom: PhantomData<T>,
+}
+
+impl<F, T> BitmapGridDrawer<F, T>
+where
+    F: Fn(T) -> (u8, u8, u8),
+{
+    pub fn new(to_color: F, basename: &str) -> BitmapGridDrawer<F, T> {
+        // TODO: error handling
+        let path = Path::new(basename);
+        if let Some(parent) = path.parent() {
+            std::fs::create_dir_all(parent).expect("could not create folder");
+        }
+        BitmapGridDrawer {
+            to_color,
+            frame: 1,
+            basename: basename.into(),
+            phantom: PhantomData,
+        }
+    }
+
+    fn to_color(&self, value: T) -> (u8, u8, u8) {
+        (self.to_color)(value)
+    }
+}
+
+impl<F, G, T> GridDrawer<G, T> for BitmapGridDrawer<F, T>
+where
+    F: Fn(T) -> (u8, u8, u8),
+    G: Grid<T>,
+{
+    fn draw(&mut self, area: &G) {
+        let path = Path::new(&self.basename);
+        let filename = if let Some(parent) = path.parent() {
+            parent.join(&format!(
+                "{}_{:06}.ppm",
+                path.file_name().unwrap().to_str().unwrap(),
+                self.frame
+            ))
+        } else {
+            PathBuf::from(&format!("{}_{}.ppm", self.basename, self.frame))
+        };
+        let mut file =
+            File::create(&filename).expect(&format!("failed to create file: {:?}", filename));
+        self.frame += 1;
+        let ([min_x, min_y], [max_x, max_y]) = area.extents();
+        let w = max_x - min_x + 1;
+        let h = max_y - min_y + 1;
+        let header = format!("P6 {} {} 255\n", w, h);
+        let mut data = vec![];
+        data.reserve(header.len() + (w * h * 3) as usize);
+        data.extend(header.as_bytes());
+        for y in min_y..=max_y {
+            for x in min_x..=max_x {
+                let (r, g, b) = if let Some(x) = area.get_value([x, y]) {
+                    self.to_color(x)
+                } else {
+                    (255, 255, 255)
+                };
+                data.push(r);
+                data.push(g);
+                data.push(b);
+            }
+        }
+        file.write_all(&data).expect("failed to write data");
     }
 }
 

@@ -40,8 +40,24 @@ fn print_char() {
     gd.draw(&grid);
 }
 
+fn save_ppm() {
+    let grid = aoc::parse_grid(&make_grid());
+    let mut gd = aoc::BitmapGridDrawer::new(
+        |x| match x {
+            '.' => (255, 255, 255),
+            '#' => (0, 0, 0),
+            'A' => (0, 255, 0),
+            '+' => (0, 0, 255),
+            _ => panic!(),
+        },
+        "grid",
+    );
+    gd.draw(&grid);
+}
+
 fn main() {
     print_i64();
     println!("");
     print_char();
+    save_ppm();
 }
