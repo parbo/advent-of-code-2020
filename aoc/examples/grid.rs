@@ -50,7 +50,7 @@ fn save_ppm() {
             '+' => (0, 0, 255),
             _ => panic!(),
         },
-        "grid",
+        "ppm/grid/grid",
     );
     gd.draw(&grid);
 }

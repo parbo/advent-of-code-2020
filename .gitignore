@@ -12,3 +12,5 @@ Cargo.lock
 .cookie.txt
 
 history.txt
+
+ppm/**
