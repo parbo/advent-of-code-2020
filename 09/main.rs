@@ -29,9 +29,10 @@ fn part1(input: &[i64]) -> i64 {
 
 fn part2(input: &[i64]) -> i64 {
     let num = part1(input);
+    let cs = aoc::cum_sum(&input);
     for i in 0..input.len() {
 	for j in i..input.len() {
-	    let s : i64 = input[i..j].iter().sum();
+	    let s : i64 = aoc::range_sum(&cs, i, j);
 	    if s == num {
 		let min = input[i..j].iter().min().unwrap();
 		let max = input[i..j].iter().max().unwrap();
