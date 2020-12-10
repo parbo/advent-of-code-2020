@@ -24,29 +24,50 @@ fn make_graph(adapters: &[i64]) -> (i64, i64, aoc::GraphMap<i64, i32, aoc::Direc
     (outlet, device, graph)
 }
 
-fn part1(adapters: &[i64]) -> i64 {
-    let (_outlet, _device, graph) = make_graph(adapters);
-    if let Ok(path) = aoc::algo::toposort(&graph, None) {
-        let mut num_1 = 0;
-        let mut num_3 = 0;
-        let mut last = None;
-        for point in &path {
-            if let Some(l) = last {
-                let diff = point - l;
-                if diff == 1 {
-                    num_1 += 1;
-                } else if diff == 3 {
-                    num_3 += 1;
+fn longest_path(
+    graph: &aoc::GraphMap<i64, i32, aoc::Directed>,
+    u: i64,
+    t: i64,
+    paths: &mut HashMap<i64, Vec<i64>>,
+) -> Vec<i64> {
+    if u == t {
+        vec![t]
+    } else {
+        if paths.contains_key(&u) {
+            paths.get(&u).unwrap().clone()
+        } else {
+            let mut max = vec![];
+            for c in graph.neighbors(u) {
+                let mut p = vec![u];
+                p.extend(longest_path(graph, c, t, paths));
+                if p.len() > max.len() {
+                    max = p;
                 }
             }
-            last = Some(*point);
+            paths.insert(u, max.clone());
+            max
         }
-        return num_1 * num_3;
     }
-    0
 }
 
-fn dfs(
+fn part1(adapters: &[i64]) -> i64 {
+    let (outlet, device, graph) = make_graph(adapters);
+    let mut dist = HashMap::new();
+    let path = longest_path(&graph, outlet, device, &mut dist);
+    let mut num_1 = 0;
+    let mut num_3 = 0;
+    for i in 0..(path.len() - 1) {
+        let diff = path[i + 1] - path[i];
+        if diff == 1 {
+            num_1 += 1;
+        } else if diff == 3 {
+            num_3 += 1;
+        }
+    }
+    num_1 * num_3
+}
+
+fn find_npaths(
     graph: &aoc::GraphMap<i64, i32, aoc::Directed>,
     u: i64,
     t: i64,
@@ -60,7 +81,7 @@ fn dfs(
         } else {
             let mut sum = 0;
             for c in graph.neighbors(u) {
-                sum += dfs(graph, c, t, npaths);
+                sum += find_npaths(graph, c, t, npaths);
             }
             npaths.insert(u, sum);
             sum
@@ -71,7 +92,7 @@ fn dfs(
 fn part2(adapters: &[i64]) -> i64 {
     let (outlet, device, graph) = make_graph(adapters);
     let mut npaths = HashMap::new();
-    dfs(&graph, outlet, device, &mut npaths)
+    find_npaths(&graph, outlet, device, &mut npaths)
 }
 
 fn parse(lines: &[String]) -> Vec<i64> {
