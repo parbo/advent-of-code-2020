@@ -5,8 +5,8 @@ static DG: (u8, u8, u8) = (0, 100, 0);
 static LG: (u8, u8, u8) = (0, 255, 0);
 static OW: (u8, u8, u8) = (200, 200, 200);
 
-fn part1(grid: &Vec<Vec<char>>) -> usize {
-    let mut g = grid.clone();
+fn part1(grid: &[Vec<char>]) -> usize {
+    let mut g = grid.to_owned();
     let mut gd = aoc::BitmapGridDrawer::new(
         (2, 2),
         |x| match x {
@@ -38,14 +38,10 @@ fn part1(grid: &Vec<Vec<char>>) -> usize {
                         _ => {}
                     }
                 }
-                if c == 'L' {
-                    if empty == seats {
-                        newg.set_value(p, '#');
-                    }
-                } else if c == '#' {
-                    if occupied >= 4 {
-                        newg.set_value(p, 'L');
-                    }
+                if c == 'L' && empty == seats {
+                    newg.set_value(p, '#');
+                } else if c == '#' && occupied >= 4 {
+                    newg.set_value(p, 'L');
                 }
             }
         }
@@ -57,8 +53,8 @@ fn part1(grid: &Vec<Vec<char>>) -> usize {
     g.points().filter(|p| g.get_value(*p) == Some('#')).count()
 }
 
-fn part2(grid: &Vec<Vec<char>>) -> usize {
-    let mut g = grid.clone();
+fn part2(grid: &[Vec<char>]) -> usize {
+    let mut g = grid.to_owned();
     let mut gd = aoc::BitmapGridDrawer::new(
         (2, 2),
         |x| match x {
@@ -97,14 +93,10 @@ fn part2(grid: &Vec<Vec<char>>) -> usize {
                         }
                     }
                 }
-                if c == 'L' {
-                    if empty == seats {
-                        newg.set_value(p, '#');
-                    }
-                } else if c == '#' {
-                    if occupied >= 5 {
-                        newg.set_value(p, 'L');
-                    }
+                if c == 'L' && empty == seats {
+                    newg.set_value(p, '#');
+                } else if c == '#' && occupied >= 5 {
+                    newg.set_value(p, 'L');
                 }
             }
         }

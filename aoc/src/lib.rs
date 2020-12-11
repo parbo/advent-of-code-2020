@@ -210,12 +210,10 @@ where
 {
     let mut grid = HashMap::new();
     for (y, line) in lines.into_iter().enumerate() {
-        let mut x = 0;
-        for c in AsRef::as_ref(line).chars() {
+        for (x, c) in AsRef::as_ref(line).chars().enumerate() {
             if let Some(t) = f(c) {
                 grid.insert([x as i64, y as i64], t);
             }
-            x += 1;
         }
     }
     grid
@@ -323,14 +321,12 @@ impl Iterator for GridIteratorHelper {
 
     fn next(&mut self) -> Option<Self::Item> {
 	if let Some([x, y]) = self.curr {
-            let c = if x + 1 <= self.extents.1[0] {
+            let c = if x < self.extents.1[0] {
 		Some([x + 1, y])
-            } else {
-		if y + 1 <= self.extents.1[1] {
-		    Some([self.extents.0[0], y + 1])
-		} else {
-		    None
-		}
+            } else if y < self.extents.1[1] {
+		Some([self.extents.0[0], y + 1])
+	    } else {
+		None
             };
 	    let curr = self.curr;
 	    self.curr = c;
@@ -644,7 +640,7 @@ where
             PathBuf::from(&format!("{}_{}.ppm", self.basename, self.frame))
         };
         let mut file =
-            File::create(&filename).expect(&format!("failed to create file: {:?}", filename));
+            File::create(&filename).unwrap_or_else(|_| panic!("failed to create file: {:?}", filename));
         self.frame += 1;
         let ([min_x, min_y], [max_x, max_y]) = area.extents();
         let w = max_x - min_x + 1;
