@@ -29,18 +29,16 @@ fn part1(grid: &Vec<Vec<char>>) -> i64 {
                     let mut occupied = 0;
                     for d in &DIRECTIONS_INCL_DIAGONALS.clone() {
                         let np = point_add(p, *d);
-                        if np[0] >= minx && np[0] <= maxx && np[1] >= miny && np[1] <= maxy {
-                            match g.get_value(np) {
-                                Some('L') => {
-                                    empty += 1;
-                                    seats += 1;
-                                }
-                                Some('#') => {
-                                    occupied += 1;
-                                    seats += 1;
-                                }
-                                _ => {}
+                        match g.get_value(np) {
+                            Some('L') => {
+                                empty += 1;
+                                seats += 1;
                             }
+                            Some('#') => {
+                                occupied += 1;
+                                seats += 1;
+                            }
+                            _ => {}
                         }
                     }
                     if c == 'L' {
@@ -98,23 +96,20 @@ fn part2(grid: &Vec<Vec<char>>) -> i64 {
                         let mut np = p;
                         loop {
                             np = point_add(np, *d);
-                            if np[0] >= minx && np[0] <= maxx && np[1] >= miny && np[1] <= maxy {
-                                match g.get_value(np) {
-                                    Some('L') => {
-                                        empty += 1;
-                                        seats += 1;
-                                        break;
-                                    }
-                                    Some('#') => {
-                                        occupied += 1;
-                                        seats += 1;
-                                        break;
-                                    }
-                                    Some('.') => {}
-                                    _ => panic!(),
+                            match g.get_value(np) {
+                                Some('L') => {
+                                    empty += 1;
+                                    seats += 1;
+                                    break;
                                 }
-                            } else {
-                                break;
+                                Some('#') => {
+                                    occupied += 1;
+                                    seats += 1;
+                                    break;
+                                }
+                                Some('.') => {}
+                                None => break,
+				_ => panic!()
                             }
                         }
                     }
