@@ -5,9 +5,8 @@ static DG: (u8, u8, u8) = (0, 100, 0);
 static LG: (u8, u8, u8) = (0, 255, 0);
 static OW: (u8, u8, u8) = (200, 200, 200);
 
-fn part1(grid: &Vec<Vec<char>>) -> i64 {
+fn part1(grid: &Vec<Vec<char>>) -> usize {
     let mut g = grid.clone();
-    let ([minx, miny], [maxx, maxy]) = grid.extents();
     let mut gd = aoc::BitmapGridDrawer::new(
         (2, 2),
         |x| match x {
@@ -20,35 +19,32 @@ fn part1(grid: &Vec<Vec<char>>) -> i64 {
     loop {
         let mut newg = g.clone();
         gd.draw(&g);
-        for y in miny..=maxy {
-            for x in minx..=maxx {
-                let p: Point = [x as i64, y as i64];
-                if let Some(c) = g.get_value(p) {
-                    let mut empty = 0;
-                    let mut seats = 0;
-                    let mut occupied = 0;
-                    for d in &DIRECTIONS_INCL_DIAGONALS.clone() {
-                        let np = point_add(p, *d);
-                        match g.get_value(np) {
-                            Some('L') => {
-                                empty += 1;
-                                seats += 1;
-                            }
-                            Some('#') => {
-                                occupied += 1;
-                                seats += 1;
-                            }
-                            _ => {}
+        for p in g.points() {
+            if let Some(c) = g.get_value(p) {
+                let mut empty = 0;
+                let mut seats = 0;
+                let mut occupied = 0;
+                for d in &DIRECTIONS_INCL_DIAGONALS.clone() {
+                    let np = point_add(p, *d);
+                    match g.get_value(np) {
+                        Some('L') => {
+                            empty += 1;
+                            seats += 1;
                         }
+                        Some('#') => {
+                            occupied += 1;
+                            seats += 1;
+                        }
+                        _ => {}
                     }
-                    if c == 'L' {
-                        if empty == seats {
-                            newg.set_value(p, '#');
-                        }
-                    } else if c == '#' {
-                        if occupied >= 4 {
-                            newg.set_value(p, 'L');
-                        }
+                }
+                if c == 'L' {
+                    if empty == seats {
+                        newg.set_value(p, '#');
+                    }
+                } else if c == '#' {
+                    if occupied >= 4 {
+                        newg.set_value(p, 'L');
                     }
                 }
             }
@@ -58,21 +54,11 @@ fn part1(grid: &Vec<Vec<char>>) -> i64 {
         }
         g = newg.clone();
     }
-    let mut occupied = 0;
-    for y in miny..=maxy {
-        for x in minx..=maxx {
-            let p: Point = [x as i64, y as i64];
-            if let Some('#') = g.get_value(p) {
-                occupied += 1;
-            }
-        }
-    }
-    occupied
+    g.points().filter(|p| g.get_value(*p) == Some('#')).count()
 }
 
-fn part2(grid: &Vec<Vec<char>>) -> i64 {
+fn part2(grid: &Vec<Vec<char>>) -> usize {
     let mut g = grid.clone();
-    let ([minx, miny], [maxx, maxy]) = grid.extents();
     let mut gd = aoc::BitmapGridDrawer::new(
         (2, 2),
         |x| match x {
@@ -85,42 +71,39 @@ fn part2(grid: &Vec<Vec<char>>) -> i64 {
     loop {
         let mut newg = g.clone();
         gd.draw(&g);
-        for y in miny..=maxy {
-            for x in minx..=maxx {
-                let p: Point = [x as i64, y as i64];
-                if let Some(c) = g.get_value(p) {
-                    let mut empty = 0;
-                    let mut seats = 0;
-                    let mut occupied = 0;
-                    for d in &DIRECTIONS_INCL_DIAGONALS.clone() {
-                        let mut np = p;
-                        loop {
-                            np = point_add(np, *d);
-                            match g.get_value(np) {
-                                Some('L') => {
-                                    empty += 1;
-                                    seats += 1;
-                                    break;
-                                }
-                                Some('#') => {
-                                    occupied += 1;
-                                    seats += 1;
-                                    break;
-                                }
-                                Some('.') => {}
-                                None => break,
-				_ => panic!()
+        for p in g.points() {
+            if let Some(c) = g.get_value(p) {
+                let mut empty = 0;
+                let mut seats = 0;
+                let mut occupied = 0;
+                for d in &DIRECTIONS_INCL_DIAGONALS.clone() {
+                    let mut np = p;
+                    loop {
+                        np = point_add(np, *d);
+                        match g.get_value(np) {
+                            Some('L') => {
+                                empty += 1;
+                                seats += 1;
+                                break;
                             }
+                            Some('#') => {
+                                occupied += 1;
+                                seats += 1;
+                                break;
+                            }
+                            Some('.') => {}
+                            None => break,
+                            _ => panic!(),
                         }
                     }
-                    if c == 'L' {
-                        if empty == seats {
-                            newg.set_value(p, '#');
-                        }
-                    } else if c == '#' {
-                        if occupied >= 5 {
-                            newg.set_value(p, 'L');
-                        }
+                }
+                if c == 'L' {
+                    if empty == seats {
+                        newg.set_value(p, '#');
+                    }
+                } else if c == '#' {
+                    if occupied >= 5 {
+                        newg.set_value(p, 'L');
                     }
                 }
             }
@@ -130,16 +113,7 @@ fn part2(grid: &Vec<Vec<char>>) -> i64 {
         }
         g = newg.clone();
     }
-    let mut occupied = 0;
-    for y in miny..=maxy {
-        for x in minx..=maxx {
-            let p: Point = [x as i64, y as i64];
-            if let Some('#') = g.get_value(p) {
-                occupied += 1;
-            }
-        }
-    }
-    occupied
+    g.points().filter(|p| g.get_value(*p) == Some('#')).count()
 }
 
 fn parse(lines: &[String]) -> Vec<Vec<char>> {

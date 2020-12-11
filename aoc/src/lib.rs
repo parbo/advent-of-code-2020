@@ -313,10 +313,46 @@ pub fn range_sum<T: num::Num + Copy>(cum_sum: &[T], a: usize, b: usize) -> T {
     }
 }
 
-pub trait Grid<T> {
+pub struct GridIteratorHelper {
+    extents: (Point, Point),
+    curr: Option<Point>,
+}
+
+impl Iterator for GridIteratorHelper {
+    type Item = Point;
+
+    fn next(&mut self) -> Option<Self::Item> {
+	if let Some([x, y]) = self.curr {
+            let c = if x + 1 <= self.extents.1[0] {
+		Some([x + 1, y])
+            } else {
+		if y + 1 <= self.extents.1[1] {
+		    Some([self.extents.0[0], y + 1])
+		} else {
+		    None
+		}
+            };
+	    let curr = self.curr;
+	    self.curr = c;
+            curr
+	} else {
+	    None
+	}
+    }
+}
+
+pub trait Grid<T>
+{
     fn get_value(&self, pos: Point) -> Option<T>;
     fn set_value(&mut self, pos: Point, value: T);
     fn extents(&self) -> (Point, Point);
+    fn points(&self) -> GridIteratorHelper {
+        let extents = self.extents();
+        GridIteratorHelper {
+            extents,
+            curr: Some(extents.0),
+        }
+    }
 }
 
 impl<S: ::std::hash::BuildHasher> Grid<i64> for HashMap<Point, i64, S> {
@@ -339,7 +375,9 @@ impl<S: ::std::hash::BuildHasher> Grid<i64> for HashMap<Point, i64, S> {
     }
 }
 
-impl<S: ::std::hash::BuildHasher> Grid<char> for HashMap<Point, char, S> {
+impl<S: ::std::hash::BuildHasher> Grid<char>
+    for HashMap<Point, char, S>
+{
     fn get_value(&self, pos: Point) -> Option<char> {
         if let Some(x) = self.get(&pos) {
             Some(*x)
@@ -527,17 +565,15 @@ where
 {
     fn draw(&mut self, area: &G) {
         self.window.clear();
-        let ([min_x, max_x], [min_y, max_y]) = area.extents();
-        for y in min_y..=max_y {
-            for x in min_x..=max_x {
-                let ch = if let Some(x) = area.get_value([x, y]) {
-                    self.to_char(x)
-                } else {
-                    ' '
-                };
-                self.window
-                    .mvaddch((y - min_y) as i32, (x - min_x) as i32, ch);
-            }
+        let ([min_x, _], [min_y, _]) = area.extents();
+	for p in area.points() {
+            let ch = if let Some(x) = area.get_value(p) {
+                self.to_char(x)
+            } else {
+                ' '
+            };
+            self.window
+                .mvaddch((p[1] - min_y) as i32, (p[0] - min_x) as i32, ch);
         }
         if let Some(pancurses::Input::Character(c)) = self.window.getch() {
             if c == 'q' {
@@ -620,24 +656,22 @@ where
         let num_pixels = (pixelw * pixelh) as usize;
         let mut pixels: Vec<(u8, u8, u8)> = vec![];
         pixels.resize_with(num_pixels, || (255, 255, 255));
-        for y in min_y..=max_y {
-            for x in min_x..=max_x {
-                if let Some(value) = area.get_value([x, y]) {
-                    let sprite = self.to_sprite(value);
-                    let mut yy = y * self.sprite_dimension.1;
-                    let mut xx = x * self.sprite_dimension.0;
-		    let xxx = xx;
-                    for col in &sprite {
-                        let pixel_offs = (yy * pixelw + xx) as usize;
-                        pixels[pixel_offs] = *col;
-                        xx += 1;
-                        if xx - xxx >= self.sprite_dimension.0 {
-                            xx = x * self.sprite_dimension.0;
-                            yy += 1
-                        }
+	for [x, y] in area.points() {
+            if let Some(value) = area.get_value([x, y]) {
+                let sprite = self.to_sprite(value);
+                let mut yy = y * self.sprite_dimension.1;
+                let mut xx = x * self.sprite_dimension.0;
+                let xxx = xx;
+                for col in &sprite {
+                    let pixel_offs = (yy * pixelw + xx) as usize;
+                    pixels[pixel_offs] = *col;
+                    xx += 1;
+                    if xx - xxx >= self.sprite_dimension.0 {
+                        xx = x * self.sprite_dimension.0;
+                        yy += 1
                     }
-                };
-            }
+                }
+            };
         }
         let mut data: Vec<u8> = vec![];
         data.reserve(hl + 3 * pixels.len());
