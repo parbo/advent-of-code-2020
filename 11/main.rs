@@ -1,20 +1,19 @@
 use aoc::Grid;
 use aoc::*;
 
+static DG: (u8, u8, u8) = (0, 100, 0);
+static LG: (u8, u8, u8) = (0, 255, 0);
+static OW: (u8, u8, u8) = (200, 200, 200);
+
 fn part1(grid: &Vec<Vec<char>>) -> i64 {
     let mut g = grid.clone();
     let ([minx, miny], [maxx, maxy]) = grid.extents();
     let mut gd = aoc::BitmapGridDrawer::new(
         (2, 2),
         |x| match x {
-            '#' => vec![(255, 0, 0), (0, 0, 255), (255, 0, 0), (255, 0, 0)],
-            'L' => vec![(0, 0, 255), (0, 0, 255), (0, 0, 255), (0, 0, 255)],
-            _ => vec![
-                (255, 255, 255),
-                (255, 255, 255),
-                (255, 255, 255),
-                (255, 255, 255),
-            ],
+            '#' => vec![LG, LG, LG, LG],
+            'L' => vec![DG, DG, DG, DG],
+            _ => vec![OW, OW, OW, OW],
         },
         "ppm/day11/part1",
     );
@@ -79,14 +78,9 @@ fn part2(grid: &Vec<Vec<char>>) -> i64 {
     let mut gd = aoc::BitmapGridDrawer::new(
         (2, 2),
         |x| match x {
-            '#' => vec![(255, 0, 0), (0, 0, 255), (255, 0, 0), (255, 0, 0)],
-            'L' => vec![(0, 0, 255), (0, 0, 255), (0, 0, 255), (0, 0, 255)],
-            _ => vec![
-                (255, 255, 255),
-                (255, 255, 255),
-                (255, 255, 255),
-                (255, 255, 255),
-            ],
+            '#' => vec![LG, LG, LG, LG],
+            'L' => vec![DG, DG, DG, DG],
+            _ => vec![OW, OW, OW, OW],
         },
         "ppm/day11/part2",
     );
