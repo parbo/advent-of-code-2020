@@ -676,9 +676,7 @@ where
                     let mut xx = (x - min_x) * self.sprite_dimension.0;
                     let xxx = xx;
                     for col in &sprite {
-                        let pixel_offs = (yy * self.sprite_dimension.1 * pixelw
-                            + xx * self.sprite_dimension.0)
-                            as usize;
+                        let pixel_offs = (yy * pixelw + xx) as usize;
                         pixels[pixel_offs] = *col;
                         xx += 1;
                         if xx - xxx >= self.sprite_dimension.0 {
