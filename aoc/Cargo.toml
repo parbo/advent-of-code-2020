@@ -12,6 +12,7 @@ lazy_static = "1.4.0"
 petgraph = "0.5.1"
 itertools = "0.8.0"
 regex = "1.4.2"
+image = "0.23.12"
 
 [dependencies.pancurses]
 version = "0.16"

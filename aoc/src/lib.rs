@@ -1,3 +1,4 @@
+use image::{Rgb, RgbImage};
 use std::collections::HashMap;
 use std::env;
 use std::error;
@@ -597,7 +598,7 @@ where
 }
 
 // These can be converted to movies with:
-// ffmpeg -framerate 25 -i "basename_%06d.ppm" output
+// ffmpeg -framerate 25 -i "basename_%06d.png" output
 // You can change the start number with the -start_number input option.
 impl<F, T> BitmapGridDrawer<F, T>
 where
@@ -641,15 +642,13 @@ where
         let path = Path::new(&self.basename);
         let filename = if let Some(parent) = path.parent() {
             parent.join(&format!(
-                "{}_{:06}.ppm",
+                "{}_{:06}.png",
                 path.file_name().unwrap().to_str().unwrap(),
                 self.frame
             ))
         } else {
-            PathBuf::from(&format!("{}_{}.ppm", self.basename, self.frame))
+            PathBuf::from(&format!("{}_{}.png", self.basename, self.frame))
         };
-        let mut file = File::create(&filename)
-            .unwrap_or_else(|_| panic!("failed to create file: {:?}", filename));
         self.frame += 1;
         let ([mut min_x, mut min_y], [mut max_x, mut max_y]) = area.extents();
         // "clip" to rect
@@ -663,11 +662,9 @@ where
         let h = max_y - min_y + 1;
         let pixelw = w * self.sprite_dimension.0;
         let pixelh = h * self.sprite_dimension.1;
-        let header = format!("P6 {} {} 255\n", pixelw, pixelh);
-        let hl = header.len();
-        let num_pixels = (pixelw * pixelh) as usize;
-        let mut pixels: Vec<(u8, u8, u8)> = vec![];
-        pixels.resize_with(num_pixels, || (255, 255, 255));
+        // Default bg is white
+        let buffer = vec![255; (3 * pixelw * pixelh) as usize];
+        let mut image = RgbImage::from_raw(pixelw as u32, pixelh as u32, buffer).unwrap();
         for y in min_y..=max_y {
             for x in min_x..=max_x {
                 if let Some(value) = area.get_value([x, y]) {
@@ -676,8 +673,9 @@ where
                     let mut xx = (x - min_x) * self.sprite_dimension.0;
                     let xxx = xx;
                     for col in &sprite {
-                        let pixel_offs = (yy * pixelw + xx) as usize;
-                        pixels[pixel_offs] = *col;
+                        let (r, g, b) = *col;
+                        let rgb = Rgb([r, g, b]);
+                        image.put_pixel(xx as u32, yy as u32, rgb);
                         xx += 1;
                         if xx - xxx >= self.sprite_dimension.0 {
                             xx = x * self.sprite_dimension.0;
@@ -687,15 +685,7 @@ where
                 }
             }
         }
-        let mut data: Vec<u8> = vec![];
-        data.reserve(hl + 3 * pixels.len());
-        data.extend(header.as_bytes());
-        for (r, g, b) in &pixels {
-            data.push(*r);
-            data.push(*g);
-            data.push(*b);
-        }
-        file.write_all(&data).expect("failed to write data");
+        image.save(filename).unwrap();
     }
 }
 
