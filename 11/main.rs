@@ -5,7 +5,7 @@ static DG: (u8, u8, u8) = (0, 100, 0);
 static LG: (u8, u8, u8) = (0, 255, 0);
 static OW: (u8, u8, u8) = (200, 200, 200);
 
-fn part1(grid: &[Vec<char>]) -> usize {
+fn part1(grid: &[Vec<char>], d: bool) -> usize {
     let mut g = grid.to_owned();
     let mut gd = aoc::BitmapGridDrawer::new(
         (2, 2),
@@ -18,7 +18,9 @@ fn part1(grid: &[Vec<char>]) -> usize {
     );
     loop {
         let mut newg = g.clone();
-        gd.draw(&g);
+        if d {
+	    gd.draw(&g);
+	}
         for p in g.points() {
             if let Some(c) = g.get_value(p) {
                 let mut empty = 0;
@@ -53,7 +55,7 @@ fn part1(grid: &[Vec<char>]) -> usize {
     g.points().filter(|p| g.get_value(*p) == Some('#')).count()
 }
 
-fn part2(grid: &[Vec<char>]) -> usize {
+fn part2(grid: &[Vec<char>], d: bool) -> usize {
     let mut g = grid.to_owned();
     let mut gd = aoc::BitmapGridDrawer::new(
         (2, 2),
@@ -66,7 +68,9 @@ fn part2(grid: &[Vec<char>]) -> usize {
     );
     loop {
         let mut newg = g.clone();
-        gd.draw(&g);
+	if d {
+            gd.draw(&g);
+	}
         for p in g.points() {
             if let Some(c) = g.get_value(p) {
                 let mut empty = 0;
@@ -116,9 +120,9 @@ fn main() {
     let (part, lines) = aoc::read_lines();
     let parsed = parse(&lines);
     let result = if part == 1 {
-        part1(&parsed)
+        part1(&parsed, true)
     } else {
-        part2(&parsed)
+        part2(&parsed, true)
     };
     println!("{}", result);
 }
@@ -141,6 +145,6 @@ mod tests {
         g.push("L.LLLLLL.L".into());
         g.push("L.LLLLL.LL".into());
         let grid = parse_grid(&g);
-        assert_eq!(part1(&grid), 37);
+        assert_eq!(part1(&grid, false), 37);
     }
 }

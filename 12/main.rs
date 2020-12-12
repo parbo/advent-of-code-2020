@@ -1,6 +1,6 @@
 use aoc::*;
-use std::collections::HashMap;
 use std::iter::*;
+use std::collections::HashMap;
 
 fn draw(orig_path: &[(Point, Point)], s: &str, scale: i64) {
     let mut minx = 0;
@@ -84,7 +84,7 @@ fn draw(orig_path: &[(Point, Point)], s: &str, scale: i64) {
     }
 }
 
-fn part1(moves: &[(char, i64)]) -> i64 {
+fn part1(moves: &[(char, i64)], d: bool) -> i64 {
     let mut curr = [0, 0];
     let mut facing = EAST;
     let mut path = vec![(curr, facing)];
@@ -109,11 +109,13 @@ fn part1(moves: &[(char, i64)]) -> i64 {
         }
         path.push((curr, facing));
     }
-    draw(&path, "ppm/day12/part1", 1);
+    if d {
+	draw(&path, "ppm/day12/part1", 1);
+    }
     curr[0].abs() + curr[1].abs()
 }
 
-fn part2(moves: &[(char, i64)]) -> i64 {
+fn part2(moves: &[(char, i64)], d: bool) -> i64 {
     let mut waypoint = [10, -1];
     let mut ship = [0, 0];
     let mut path = vec![(ship, waypoint)];
@@ -138,7 +140,9 @@ fn part2(moves: &[(char, i64)]) -> i64 {
         }
         path.push((ship, waypoint));
     }
-    draw(&path, "ppm/day12/part2", 16);
+    if d {
+	draw(&path, "ppm/day12/part2", 16);
+    }
     ship[0].abs() + ship[1].abs()
 }
 
@@ -153,9 +157,9 @@ fn main() {
     let (part, lines) = aoc::read_lines();
     let parsed = parse(&lines);
     let result = if part == 1 {
-        part1(&parsed)
+        part1(&parsed, true)
     } else {
-        part2(&parsed)
+        part2(&parsed, true)
     };
     println!("{}", result);
 }
@@ -167,7 +171,7 @@ mod tests {
     #[test]
     fn test_part2() {
         assert_eq!(
-            part2(&vec![('F', 10), ('N', 3), ('F', 7), ('R', 90), ('F', 11)]),
+            part2(&vec![('F', 10), ('N', 3), ('F', 7), ('R', 90), ('F', 11)], false),
             286
         );
     }
