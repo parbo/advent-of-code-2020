@@ -55,7 +55,7 @@ pub use self::vecmath::vec3_dot as vec_dot;
 pub use self::vecmath::vec3_neg as vec_neg;
 pub use self::vecmath::vec3_normalized as vec_normalize;
 pub use self::vecmath::vec3_scale as vec_mul;
-pub use self::vecmath::vec3_scale as point_mul;
+pub use self::vecmath::vec2_scale as point_mul;
 pub use self::vecmath::vec3_square_len as vec_square_length;
 pub use self::vecmath::vec3_sub as vec_sub;
 
@@ -67,6 +67,12 @@ pub fn cmul(v1: Vec3, v2: Vec3) -> Vec3 {
     let [x1, y1, z1] = v1;
     let [x2, y2, z2] = v2;
     [x1 * x2, y1 * y2, z1 * z2]
+}
+
+pub fn cmul2(v1: Point, v2: Point) -> Point {
+    let [x1, y1] = v1;
+    let [x2, y2] = v2;
+    [x1 * x2, y1 * y2]
 }
 
 pub static NORTH: Point = [0, -1];
