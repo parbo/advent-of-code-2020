@@ -47,6 +47,7 @@ pub use self::vecmath::vec2_add as point_add;
 pub use self::vecmath::vec2_dot as point_dot;
 pub use self::vecmath::vec2_neg as point_neg;
 pub use self::vecmath::vec2_normalized as point_normalize;
+pub use self::vecmath::vec2_scale as point_mul;
 pub use self::vecmath::vec2_square_len as point_square_length;
 pub use self::vecmath::vec2_sub as point_sub;
 pub use self::vecmath::vec3_add as vec_add;
@@ -55,7 +56,6 @@ pub use self::vecmath::vec3_dot as vec_dot;
 pub use self::vecmath::vec3_neg as vec_neg;
 pub use self::vecmath::vec3_normalized as vec_normalize;
 pub use self::vecmath::vec3_scale as vec_mul;
-pub use self::vecmath::vec2_scale as point_mul;
 pub use self::vecmath::vec3_square_len as vec_square_length;
 pub use self::vecmath::vec3_sub as vec_sub;
 
@@ -326,25 +326,24 @@ impl Iterator for GridIteratorHelper {
     type Item = Point;
 
     fn next(&mut self) -> Option<Self::Item> {
-	if let Some([x, y]) = self.curr {
+        if let Some([x, y]) = self.curr {
             let c = if x < self.extents.1[0] {
-		Some([x + 1, y])
+                Some([x + 1, y])
             } else if y < self.extents.1[1] {
-		Some([self.extents.0[0], y + 1])
-	    } else {
-		None
+                Some([self.extents.0[0], y + 1])
+            } else {
+                None
             };
-	    let curr = self.curr;
-	    self.curr = c;
+            let curr = self.curr;
+            self.curr = c;
             curr
-	} else {
-	    None
-	}
+        } else {
+            None
+        }
     }
 }
 
-pub trait Grid<T>
-{
+pub trait Grid<T> {
     fn get_value(&self, pos: Point) -> Option<T>;
     fn set_value(&mut self, pos: Point, value: T);
     fn extents(&self) -> (Point, Point);
@@ -377,9 +376,7 @@ impl<S: ::std::hash::BuildHasher> Grid<i64> for HashMap<Point, i64, S> {
     }
 }
 
-impl<S: ::std::hash::BuildHasher> Grid<char>
-    for HashMap<Point, char, S>
-{
+impl<S: ::std::hash::BuildHasher> Grid<char> for HashMap<Point, char, S> {
     fn get_value(&self, pos: Point) -> Option<char> {
         if let Some(x) = self.get(&pos) {
             Some(*x)
@@ -568,7 +565,7 @@ where
     fn draw(&mut self, area: &G) {
         self.window.clear();
         let ([min_x, _], [min_y, _]) = area.extents();
-	for p in area.points() {
+        for p in area.points() {
             let ch = if let Some(x) = area.get_value(p) {
                 self.to_char(x)
             } else {
@@ -595,6 +592,7 @@ where
     to_sprite: F,
     basename: String,
     frame: usize,
+    rect: Option<(Point, Point)>,
     phantom: PhantomData<T>,
 }
 
@@ -620,8 +618,13 @@ where
             to_sprite,
             frame: 1,
             basename: basename.into(),
+            rect: None,
             phantom: PhantomData,
         }
+    }
+
+    pub fn set_rect(&mut self, r: (Point, Point)) {
+        self.rect = Some(r);
     }
 
     fn to_sprite(&self, value: T) -> Vec<(u8, u8, u8)> {
@@ -645,10 +648,17 @@ where
         } else {
             PathBuf::from(&format!("{}_{}.ppm", self.basename, self.frame))
         };
-        let mut file =
-            File::create(&filename).unwrap_or_else(|_| panic!("failed to create file: {:?}", filename));
+        let mut file = File::create(&filename)
+            .unwrap_or_else(|_| panic!("failed to create file: {:?}", filename));
         self.frame += 1;
-        let ([min_x, min_y], [max_x, max_y]) = area.extents();
+        let ([mut min_x, mut min_y], [mut max_x, mut max_y]) = area.extents();
+        // "clip" to rect
+        if let Some(([cmin_x, cmin_y], [cmax_x, cmax_y])) = self.rect {
+            min_x = cmin_x;
+            min_y = cmin_y;
+            max_x = cmax_x;
+            max_y = cmax_y;
+        }
         let w = max_x - min_x + 1;
         let h = max_y - min_y + 1;
         let pixelw = w * self.sprite_dimension.0;
@@ -658,22 +668,26 @@ where
         let num_pixels = (pixelw * pixelh) as usize;
         let mut pixels: Vec<(u8, u8, u8)> = vec![];
         pixels.resize_with(num_pixels, || (255, 255, 255));
-	for [x, y] in area.points() {
-            if let Some(value) = area.get_value([x, y]) {
-                let sprite = self.to_sprite(value);
-                let mut yy = y * self.sprite_dimension.1;
-                let mut xx = x * self.sprite_dimension.0;
-                let xxx = xx;
-                for col in &sprite {
-                    let pixel_offs = (yy * pixelw + xx) as usize;
-                    pixels[pixel_offs] = *col;
-                    xx += 1;
-                    if xx - xxx >= self.sprite_dimension.0 {
-                        xx = x * self.sprite_dimension.0;
-                        yy += 1
+        for y in min_y..=max_y {
+            for x in min_x..=max_x {
+                if let Some(value) = area.get_value([x, y]) {
+                    let sprite = self.to_sprite(value);
+                    let mut yy = (y - min_y) * self.sprite_dimension.1;
+                    let mut xx = (x - min_x) * self.sprite_dimension.0;
+                    let xxx = xx;
+                    for col in &sprite {
+                        let pixel_offs = (yy * self.sprite_dimension.1 * pixelw
+                            + xx * self.sprite_dimension.0)
+                            as usize;
+                        pixels[pixel_offs] = *col;
+                        xx += 1;
+                        if xx - xxx >= self.sprite_dimension.0 {
+                            xx = x * self.sprite_dimension.0;
+                            yy += 1
+                        }
                     }
                 }
-            };
+            }
         }
         let mut data: Vec<u8> = vec![];
         data.reserve(hl + 3 * pixels.len());
@@ -685,6 +699,37 @@ where
         }
         file.write_all(&data).expect("failed to write data");
     }
+}
+
+// Bresenham
+// https://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm
+pub fn plot_line(a: Point, b: Point) -> Vec<Point> {
+    let [mut x0, mut y0] = a;
+    let [x1, y1] = b;
+    let dx = (x1 - x0).abs();
+    let sx = if x0 < x1 { 1 } else { -1 };
+    let dy = -(y1 - y0).abs();
+    let sy = if y0 < y1 { 1 } else { -1 };
+    let mut err = dx + dy; /* error value e_xy */
+    let mut out = vec![];
+    loop {
+        out.push([x0, y0]);
+        if x0 == x1 && y0 == y1 {
+            break;
+        }
+        let e2 = 2 * err;
+        /* e_xy+e_x > 0 */
+        if e2 >= dy {
+            err += dy;
+            x0 += sx;
+        }
+        /* e_xy+e_y < 0 */
+        if e2 <= dx {
+            err += dx;
+            y0 += sy;
+        }
+    }
+    out
 }
 
 pub fn read_lines() -> (i32, Vec<String>) {
