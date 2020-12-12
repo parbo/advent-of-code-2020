@@ -3,13 +3,13 @@ use std::iter::*;
 
 fn part1(moves: &[(char, i64)]) -> i64 {
     let mut curr = [0, 0];
-    let mut facing = aoc::EAST;
+    let mut facing = EAST;
     for (d, steps) in moves {
         match d {
-            'E' => curr = point_add(curr, point_mul(aoc::EAST, *steps)),
-            'W' => curr = point_add(curr, point_mul(aoc::WEST, *steps)),
-            'N' => curr = point_add(curr, point_mul(aoc::NORTH, *steps)),
-            'S' => curr = point_add(curr, point_mul(aoc::SOUTH, *steps)),
+            'E' => curr = point_add(curr, point_mul(EAST, *steps)),
+            'W' => curr = point_add(curr, point_mul(WEST, *steps)),
+            'N' => curr = point_add(curr, point_mul(NORTH, *steps)),
+            'S' => curr = point_add(curr, point_mul(SOUTH, *steps)),
             'F' => curr = point_add(curr, point_mul(facing, *steps)),
             'L' => {
                 for _ in (0..*steps).step_by(90) {
@@ -32,10 +32,10 @@ fn part2(moves: &[(char, i64)]) -> i64 {
     let mut ship = [0, 0];
     for (d, steps) in moves {
         match d {
-            'E' => waypoint = point_add(waypoint, point_mul(aoc::EAST, *steps)),
-            'W' => waypoint = point_add(waypoint, point_mul(aoc::WEST, *steps)),
-            'N' => waypoint = point_add(waypoint, point_mul(aoc::NORTH, *steps)),
-            'S' => waypoint = point_add(waypoint, point_mul(aoc::SOUTH, *steps)),
+            'E' => waypoint = point_add(waypoint, point_mul(EAST, *steps)),
+            'W' => waypoint = point_add(waypoint, point_mul(WEST, *steps)),
+            'N' => waypoint = point_add(waypoint, point_mul(NORTH, *steps)),
+            'S' => waypoint = point_add(waypoint, point_mul(SOUTH, *steps)),
             'F' => ship = point_add(ship, point_mul(waypoint, *steps)),
             'L' => {
                 for _ in (0..*steps).step_by(90) {
