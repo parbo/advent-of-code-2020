@@ -585,30 +585,34 @@ where
     }
 }
 
-pub struct BitmapGridDrawer<F, T>
+pub struct BitmapGridDrawer<F, G, T>
 where
     F: Fn(T) -> Vec<(u8, u8, u8)>,
+    G: Grid<T>,
 {
     sprite_dimension: (i64, i64),
     to_sprite: F,
     basename: String,
     frame: usize,
     rect: Option<(Point, Point)>,
+    image: Option<RgbImage>,
     phantom: PhantomData<T>,
+    phantom_g: PhantomData<G>,
 }
 
 // These can be converted to movies with:
 // ffmpeg -framerate 25 -i "basename_%06d.png" output
 // You can change the start number with the -start_number input option.
-impl<F, T> BitmapGridDrawer<F, T>
+impl<F, G, T> BitmapGridDrawer<F, G, T>
 where
     F: Fn(T) -> Vec<(u8, u8, u8)>,
+    G: Grid<T>,
 {
     pub fn new(
         sprite_dimension: (i64, i64),
         to_sprite: F,
         basename: &str,
-    ) -> BitmapGridDrawer<F, T> {
+    ) -> BitmapGridDrawer<F, G, T> {
         // TODO: error handling
         let path = Path::new(basename);
         if let Some(parent) = path.parent() {
@@ -620,7 +624,9 @@ where
             frame: 1,
             basename: basename.into(),
             rect: None,
+            image: None,
             phantom: PhantomData,
+            phantom_g: PhantomData,
         }
     }
 
@@ -628,17 +634,7 @@ where
         self.rect = Some(r);
     }
 
-    fn to_sprite(&self, value: T) -> Vec<(u8, u8, u8)> {
-        (self.to_sprite)(value)
-    }
-}
-
-impl<F, G, T> GridDrawer<G, T> for BitmapGridDrawer<F, T>
-where
-    F: Fn(T) -> Vec<(u8, u8, u8)>,
-    G: Grid<T>,
-{
-    fn draw(&mut self, area: &G) {
+    pub fn save_image(&self) {
         let path = Path::new(&self.basename);
         let filename = if let Some(parent) = path.parent() {
             parent.join(&format!(
@@ -649,6 +645,12 @@ where
         } else {
             PathBuf::from(&format!("{}_{}.png", self.basename, self.frame))
         };
+        if let Some(image) = &self.image {
+            image.save(filename).unwrap();
+        }
+    }
+
+    pub fn draw_grid(&mut self, area: &G) {
         self.frame += 1;
         let ([mut min_x, mut min_y], [mut max_x, mut max_y]) = area.extents();
         // "clip" to rect
@@ -685,7 +687,32 @@ where
                 }
             }
         }
-        image.save(filename).unwrap();
+        self.image = Some(image);
+    }
+
+    pub fn put_pixel(&mut self, p: Point, rgb: (u8, u8, u8)) {
+	if let Some(ref mut image) = self.image {
+	    let x = p[0] as u32;
+	    let y = p[1] as u32;
+	    if x < image.width() && y < image.height() {
+		image.put_pixel(x, y, Rgb([rgb.0, rgb.1, rgb.2]));
+	    }
+	}
+    }
+
+    fn to_sprite(&self, value: T) -> Vec<(u8, u8, u8)> {
+        (self.to_sprite)(value)
+    }
+}
+
+impl<F, G, T> GridDrawer<G, T> for BitmapGridDrawer<F, G, T>
+where
+    F: Fn(T) -> Vec<(u8, u8, u8)>,
+    G: Grid<T>,
+{
+    fn draw(&mut self, area: &G) {
+        self.draw_grid(area);
+        self.save_image();
     }
 }
 

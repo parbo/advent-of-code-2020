@@ -1,6 +1,6 @@
 use aoc::*;
-use std::iter::*;
 use std::collections::HashMap;
+use std::iter::*;
 
 fn draw(orig_path: &[(Point, Point)], s: &str, scale: i64) {
     let mut minx = 0;
@@ -55,10 +55,7 @@ fn draw(orig_path: &[(Point, Point)], s: &str, scale: i64) {
     let mut gd = aoc::BitmapGridDrawer::new(
         (1, 1),
         |x| match x {
-            '#' => vec![(255, 0, 0)],
-            'L' => vec![(0, 0, 255)],
-            '*' => vec![(40, 0, 0)],
-            '+' => vec![(0, 0, 40)],
+            '#' => vec![(100, 0, 0)],
             _ => vec![(255, 255, 255)],
         },
         s,
@@ -66,8 +63,6 @@ fn draw(orig_path: &[(Point, Point)], s: &str, scale: i64) {
     let f = path.len();
     println!("{} frames", path.len());
     for (i, (ship, wp)) in path.iter().enumerate() {
-        let p = point_add(*ship, *wp);
-        *g.entry(p).or_insert('L') = 'L';
         *g.entry(*ship).or_insert('#') = '#';
         // Draw max 1000 frames
         if (f > 1000 && i % (f / 1000) == 0) || i + 1 == f {
@@ -77,10 +72,32 @@ fn draw(orig_path: &[(Point, Point)], s: &str, scale: i64) {
                 [ship[0] + 500, ship[1] + 500],
             );
             gd.set_rect(r);
-            gd.draw(&g);
+            gd.draw_grid(&g);
+            // Fatten up the ship
+            for y in -4..=4 {
+                for x in -4..=4 {
+                    gd.put_pixel(
+                        point_add([x, y], [500, 500]),
+                        (255, 0, 0),
+                    );
+		}
+	    }
+	    // Draw the wp as a plus and also offset it a bit
+	    let pp = point_mul(*wp, 16);
+            for y in -2..=2 {
+                gd.put_pixel(
+                    point_add(point_add([0, y], pp), [500, 500]),
+                    (0, 0, 255),
+                );
+	    }
+            for x in -2..=2 {
+                gd.put_pixel(
+                    point_add(point_add([x, 0], pp), [500, 500]),
+                    (0, 0, 255),
+                );
+            }
+            gd.save_image();
         }
-        *g.entry(p).or_insert('+') = '+';
-        *g.entry(*ship).or_insert('*') = '*';
     }
 }
 
@@ -110,7 +127,7 @@ fn part1(moves: &[(char, i64)], d: bool) -> i64 {
         path.push((curr, facing));
     }
     if d {
-	draw(&path, "ppm/day12/part1", 1);
+        draw(&path, "ppm/day12/part1", 1);
     }
     curr[0].abs() + curr[1].abs()
 }
@@ -141,7 +158,7 @@ fn part2(moves: &[(char, i64)], d: bool) -> i64 {
         path.push((ship, waypoint));
     }
     if d {
-	draw(&path, "ppm/day12/part2", 16);
+        draw(&path, "ppm/day12/part2", 16);
     }
     ship[0].abs() + ship[1].abs()
 }
@@ -171,7 +188,10 @@ mod tests {
     #[test]
     fn test_part2() {
         assert_eq!(
-            part2(&vec![('F', 10), ('N', 3), ('F', 7), ('R', 90), ('F', 11)], false),
+            part2(
+                &vec![('F', 10), ('N', 3), ('F', 7), ('R', 90), ('F', 11)],
+                false
+            ),
             286
         );
     }
