@@ -75,22 +75,22 @@ pub fn cmul2(v1: Point, v2: Point) -> Point {
     [x1 * x2, y1 * y2]
 }
 
-pub static NORTH: Point = [0, -1];
-pub static UP: Point = NORTH;
-pub static NORTH_EAST: Point = [1, -1];
-pub static UP_RIGHT: Point = NORTH_EAST;
-pub static EAST: Point = [1, 0];
-pub static RIGHT: Point = EAST;
-pub static SOUTH_EAST: Point = [1, 1];
-pub static DOWN_RIGHT: Point = SOUTH_EAST;
-pub static SOUTH: Point = [0, 1];
-pub static DOWN: Point = SOUTH;
-pub static SOUTH_WEST: Point = [-1, 1];
-pub static DOWN_LEFT: Point = SOUTH_WEST;
-pub static WEST: Point = [-1, 0];
-pub static LEFT: Point = WEST;
-pub static NORTH_WEST: Point = [-1, -1];
-pub static UP_LEFT: Point = NORTH_WEST;
+pub const NORTH: Point = [0, -1];
+pub const UP: Point = NORTH;
+pub const NORTH_EAST: Point = [1, -1];
+pub const UP_RIGHT: Point = NORTH_EAST;
+pub const EAST: Point = [1, 0];
+pub const RIGHT: Point = EAST;
+pub const SOUTH_EAST: Point = [1, 1];
+pub const DOWN_RIGHT: Point = SOUTH_EAST;
+pub const SOUTH: Point = [0, 1];
+pub const DOWN: Point = SOUTH;
+pub const SOUTH_WEST: Point = [-1, 1];
+pub const DOWN_LEFT: Point = SOUTH_WEST;
+pub const WEST: Point = [-1, 0];
+pub const LEFT: Point = WEST;
+pub const NORTH_WEST: Point = [-1, -1];
+pub const UP_LEFT: Point = NORTH_WEST;
 
 lazy_static! {
     pub static ref DIRECTIONS: Vec<Point> = vec![NORTH, EAST, SOUTH, WEST];
