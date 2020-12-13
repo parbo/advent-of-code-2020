@@ -9,56 +9,35 @@ fn part1(tt: &(usize, Vec<(usize, usize)>)) -> usize {
     (departure - tt.0) * bus
 }
 
-fn find_ix(a: usize, b: usize, align: usize) -> Option<(usize, usize)> {
-    println!("{}, {}, {}", a, b, align);
-    let mut x = vec![];
+fn find_ix(a: usize, b: usize, align: usize) -> (usize, usize) {
     let mut i = 0;
     loop {
         if b * ((i / b) + 1) == i + align {
-            x.push(i);
-            if x.len() > 1 {
-                break;
-            }
+            return (i, aoc::lcm(a, b));
         }
         i += a;
-    }
-    if x.is_empty() {
-        None
-    } else {
-        Some((x[0], x[1] - x[0]))
     }
 }
 
 fn part2(tt: &(usize, Vec<(usize, usize)>)) -> usize {
     let mut b = tt.1.clone();
     loop {
-        let mut x = vec![];
-        for i in 0..b.len() {
-            for j in i..b.len() {
-		if i == j {
-		    continue;
-		}
-		let (offs0, bus0) = b[i];
-		let (offs1, bus1) = b[j];
-		if offs1 > offs0 {
-                    let (offs, period) = find_ix(bus0, bus1, offs1 - offs0).unwrap();
-                    x.push((offs, period));
-		} else {
-                    let (offs, period) = find_ix(bus1, bus0, offs0 - offs1).unwrap();
-                    x.push((offs, period));
-		}
-	    }
-        }
-	let lcm : usize = x.iter().fold(1, |mut acc, x| { acc = aoc::lcm(acc, x.1); acc });
-	let lcm1 : usize = x.iter().fold(1, |mut acc, x| { acc = aoc::lcm(acc, x.0); acc });
-	let lcm2 : usize = x.iter().fold(1, |mut acc, x| { acc = aoc::lcm(acc, x.1 - x.0); acc });
-        println!("x: {:?}, lcm: {}, {}, {}", x, lcm, lcm1, lcm2);
-        if x.len() == 1 {
+        if b.len() == 1 {
             break;
+        }
+        let mut x = b[0..(b.len() - 2)].to_owned();
+        let (offs0, bus0) = b[b.len() - 2];
+        let (offs1, bus1) = b[b.len() - 1];
+        if offs1 > offs0 {
+            let (offs, period) = find_ix(bus0, bus1, offs1 - offs0);
+            x.push((period - offs + offs0, period));
+        } else {
+            let (offs, period) = find_ix(bus1, bus0, offs0 - offs1);
+            x.push((period - offs + offs1, period));
         }
         b = x.clone();
     }
-    0
+    b[0].1 - b[0].0
 }
 
 fn parse(lines: &[String]) -> (usize, Vec<(usize, usize)>) {
@@ -97,7 +76,10 @@ mod tests {
 
     #[test]
     fn test_part2() {
-        let tt = (939, vec![(0, 7), (1, 13), (4, 59), (6, 31), (7, 19)]);
-        assert_eq!(part2(&tt), 1068781);
+        let tt0 = (939, vec![(0, 17), (2, 13), (3, 19)]);
+        assert_eq!(part2(&tt0), 3417);
+
+        let tt1 = (939, vec![(0, 7), (1, 13), (4, 59), (6, 31), (7, 19)]);
+        assert_eq!(part2(&tt1), 1068781);
     }
 }
