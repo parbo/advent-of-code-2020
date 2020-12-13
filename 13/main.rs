@@ -13,7 +13,7 @@ fn find_ix(a: usize, b: usize, align: usize) -> (usize, usize) {
     let mut i = 0;
     loop {
         if b * ((i / b) + 1) == i + align {
-            return (i, aoc::lcm(a, b));
+            return (i, a * b);
         }
         i += a;
     }
