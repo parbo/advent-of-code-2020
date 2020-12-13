@@ -25,16 +25,18 @@ fn part2(tt: &(usize, Vec<(usize, usize)>)) -> usize {
         if b.len() == 1 {
             break;
         }
-        let mut x = b[0..(b.len() - 2)].to_owned();
-        let (offs0, bus0) = b[b.len() - 2];
-        let (offs1, bus1) = b[b.len() - 1];
-        if offs1 > offs0 {
-            let (offs, period) = find_ix(bus0, bus1, offs1 - offs0);
-            x.push((period - offs + offs0, period));
-        } else {
-            let (offs, period) = find_ix(bus1, bus0, offs0 - offs1);
-            x.push((period - offs + offs1, period));
+        let mut x = vec![];
+        for i in (0..b.len()).step_by(2) {
+            if i + 1 < b.len() {
+                let (offs0, bus0) = b[i];
+                let (offs1, bus1) = b[i + 1];
+                let (offs, period) = find_ix(bus0, bus1, offs1 - offs0);
+                x.push((period - offs + offs0, period));
+            } else {
+                x.push(b[i]);
+            }
         }
+        x.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
         b = x.clone();
     }
     b[0].1 - b[0].0
