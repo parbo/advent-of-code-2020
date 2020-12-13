@@ -660,10 +660,10 @@ where
             max_x = cmax_x;
             max_y = cmax_y;
         }
-        let w = max_x - min_x + 1;
-        let h = max_y - min_y + 1;
-        let pixelw = w * self.sprite_dimension.0;
-        let pixelh = h * self.sprite_dimension.1;
+        let width = max_x - min_x + 1;
+        let height = max_y - min_y + 1;
+        let pixelw = width * self.sprite_dimension.0;
+        let pixelh = height * self.sprite_dimension.1;
         // Default bg is white
         let buffer = vec![255; (3 * pixelw * pixelh) as usize];
         let mut image = RgbImage::from_raw(pixelw as u32, pixelh as u32, buffer).unwrap();
@@ -691,13 +691,13 @@ where
     }
 
     pub fn put_pixel(&mut self, p: Point, rgb: (u8, u8, u8)) {
-	if let Some(ref mut image) = self.image {
-	    let x = p[0] as u32;
-	    let y = p[1] as u32;
-	    if x < image.width() && y < image.height() {
-		image.put_pixel(x, y, Rgb([rgb.0, rgb.1, rgb.2]));
-	    }
-	}
+        if let Some(ref mut image) = self.image {
+            let x = p[0] as u32;
+            let y = p[1] as u32;
+            if x < image.width() && y < image.height() {
+                image.put_pixel(x, y, Rgb([rgb.0, rgb.1, rgb.2]));
+            }
+        }
     }
 
     fn to_sprite(&self, value: T) -> Vec<(u8, u8, u8)> {

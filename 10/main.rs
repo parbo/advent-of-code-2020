@@ -32,21 +32,19 @@ fn longest_path(
 ) -> Vec<i64> {
     if u == t {
         vec![t]
+    } else if paths.contains_key(&u) {
+        paths.get(&u).unwrap().clone()
     } else {
-        if paths.contains_key(&u) {
-            paths.get(&u).unwrap().clone()
-        } else {
-            let mut max = vec![];
-            for c in graph.neighbors(u) {
-                let mut p = vec![u];
-                p.extend(longest_path(graph, c, t, paths));
-                if p.len() > max.len() {
-                    max = p;
-                }
+        let mut max = vec![];
+        for c in graph.neighbors(u) {
+            let mut p = vec![u];
+            p.extend(longest_path(graph, c, t, paths));
+            if p.len() > max.len() {
+                max = p;
             }
-            paths.insert(u, max.clone());
-            max
         }
+        paths.insert(u, max.clone());
+        max
     }
 }
 
@@ -75,17 +73,15 @@ fn find_npaths(
 ) -> i64 {
     if u == t {
         1
+    } else if npaths.contains_key(&u) {
+        *npaths.get(&u).unwrap()
     } else {
-        if npaths.contains_key(&u) {
-            *npaths.get(&u).unwrap()
-        } else {
-            let mut sum = 0;
-            for c in graph.neighbors(u) {
-                sum += find_npaths(graph, c, t, npaths);
-            }
-            npaths.insert(u, sum);
-            sum
+        let mut sum = 0;
+        for c in graph.neighbors(u) {
+            sum += find_npaths(graph, c, t, npaths);
         }
+        npaths.insert(u, sum);
+        sum
     }
 }
 
