@@ -9,12 +9,11 @@ fn part1(tt: &(usize, Vec<(usize, usize)>)) -> usize {
     (departure - tt.0) * bus
 }
 
-fn find_ix(a: usize, b: usize, offs: usize, align: usize) -> Option<(usize, usize)> {
+fn find_ix(a: usize, b: usize, align: usize) -> Option<(usize, usize)> {
     let mut x = vec![];
-    for ii in (offs..(100 * (a * b))).step_by(a) {
-	let i = ii - offs;
-	if i > offs && b * (((i - offs) / b) + 1) == i + align {
-	    x.push(ii);
+    for i in (0..(100 * (a * b))).step_by(a) {
+	if b * ((i / b) + 1) == i + align {
+	    x.push(i);
 	}
     }
     if x.is_empty() {
@@ -34,7 +33,7 @@ fn part2(tt: &(usize, Vec<(usize, usize)>)) -> usize {
             let (offs1, bus1) = b[i + 1];
 	    let offs = offsets[i];
             println!("{}, {}, {}, {}", bus0, bus1, offs, (offs1 - offs0) - offs);
-            let c = find_ix(bus0, bus1, offs, offs1 - offs0);
+            let c = find_ix(bus0, bus1, offs1 - offs0);
             x.push(c.unwrap());
             println!("{:?}, {}, {}", c, bus0, bus1);
 	}
