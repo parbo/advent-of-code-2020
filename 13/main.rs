@@ -10,46 +10,46 @@ fn part1(tt: &(usize, Vec<(usize, usize)>)) -> usize {
 }
 
 fn find_ix(a: usize, b: usize, align: usize) -> Option<(usize, usize)> {
+    println!("{}, {}, {}", a, b, align);
     let mut x = vec![];
-    for i in (0..(100 * (a * b))).step_by(a) {
-	if b * ((i / b) + 1) == i + align {
-	    x.push(i);
-	}
+    let mut i = 0;
+    loop {
+        if b * ((i / b) + 1) == i + align {
+            x.push(i);
+            if x.len() > 1 {
+                break;
+            }
+        }
+        i += a;
     }
     if x.is_empty() {
-	None
+        None
     } else {
-	Some((x[0], x[1] - x[0]))
+        Some((x[0], x[1] - x[0]))
     }
 }
 
 fn part2(tt: &(usize, Vec<(usize, usize)>)) -> usize {
     let mut b = tt.1.clone();
-    let mut offsets = vec![0; b.len()];
     loop {
-	let mut x = vec![];
-	for i in 0..(b.len() - 1) {
+        let mut x = vec![];
+        for i in 0..(b.len() - 1) {
             let (offs0, bus0) = b[i];
             let (offs1, bus1) = b[i + 1];
-	    let offs = offsets[i];
-            println!("{}, {}, {}, {}", bus0, bus1, offs, (offs1 - offs0) - offs);
-            let c = find_ix(bus0, bus1, offs1 - offs0);
-            x.push(c.unwrap());
-            println!("{:?}, {}, {}", c, bus0, bus1);
-	}
-	let mut o = vec![];
-	for i in 0..(x.len() - 1) {
-	    let a = x[i].0;
-	    let b = x[i + 1].0;
-	    o.push(a.max(b) - a.min(b));
-	}
-	println!("x: {:?}", x);
-	println!("o: {:?}", o);
-	if x.len() == 1 {
-	    break;
-	}
-	b = x.clone();
-	offsets = o.clone();
+            if offs1 > offs0 {
+                let (offs, period) = find_ix(bus0, bus1, offs1 - offs0).unwrap();
+                x.push((offs, period));
+            } else {
+                let (offs, period) = find_ix(bus1, bus0, offs0 - offs1).unwrap();
+                x.push((offs, period));
+            }
+            println!("{:?}", x);
+        }
+        println!("x: {:?}", x);
+        if x.len() == 1 {
+            break;
+        }
+        b = x.clone();
     }
     0
 }
