@@ -320,7 +320,7 @@ pub fn range_sum<T: num::Num + Copy>(cum_sum: &[T], a: usize, b: usize) -> T {
 
 pub fn egcd<T>(a: T, b: T) -> (T, T, T)
 where
-    T: std::cmp::PartialEq + num::Num + Copy,
+    T: std::cmp::PartialEq + num::Signed + Copy,
 {
     if a == T::zero() {
         (b, T::zero(), T::one())
@@ -332,7 +332,7 @@ where
 
 pub fn mod_inv<T>(x: T, n: T) -> Option<T>
 where
-    T: std::cmp::PartialEq + num::Num + Copy,
+    T: std::cmp::PartialEq + num::Signed + Copy,
 {
     let (g, x, _) = egcd(x, n);
     if g == T::one() {
@@ -344,7 +344,7 @@ where
 
 pub fn chinese_remainder<'a, T>(residues: &[T], modulii: &'a [T]) -> Option<T>
 where
-    T: 'a + std::cmp::PartialEq + num::Num + Copy + std::iter::Product<&'a T> + std::ops::AddAssign,
+    T: 'a + std::cmp::PartialEq + num::Signed + Copy + std::iter::Product<&'a T> + std::ops::AddAssign,
 {
     let prod = modulii.iter().product::<T>();
 
@@ -818,5 +818,12 @@ mod tests {
             vec!["lejon", "tiger"],
         ];
         assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_chinese_remainder() {
+	let modulii = [3,5,7];
+	let residues = [2,3,2];
+	assert_eq!(chinese_remainder(&residues, &modulii), Some(23));
     }
 }
