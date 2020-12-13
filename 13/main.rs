@@ -33,19 +33,26 @@ fn part2(tt: &(usize, Vec<(usize, usize)>)) -> usize {
     let mut b = tt.1.clone();
     loop {
         let mut x = vec![];
-        for i in 0..(b.len() - 1) {
-            let (offs0, bus0) = b[i];
-            let (offs1, bus1) = b[i + 1];
-            if offs1 > offs0 {
-                let (offs, period) = find_ix(bus0, bus1, offs1 - offs0).unwrap();
-                x.push((offs, period));
-            } else {
-                let (offs, period) = find_ix(bus1, bus0, offs0 - offs1).unwrap();
-                x.push((offs, period));
-            }
-            println!("{:?}", x);
+        for i in 0..b.len() {
+            for j in i..b.len() {
+		if i == j {
+		    continue;
+		}
+		let (offs0, bus0) = b[i];
+		let (offs1, bus1) = b[j];
+		if offs1 > offs0 {
+                    let (offs, period) = find_ix(bus0, bus1, offs1 - offs0).unwrap();
+                    x.push((offs, period));
+		} else {
+                    let (offs, period) = find_ix(bus1, bus0, offs0 - offs1).unwrap();
+                    x.push((offs, period));
+		}
+	    }
         }
-        println!("x: {:?}", x);
+	let lcm : usize = x.iter().fold(1, |mut acc, x| { acc = aoc::lcm(acc, x.1); acc });
+	let lcm1 : usize = x.iter().fold(1, |mut acc, x| { acc = aoc::lcm(acc, x.0); acc });
+	let lcm2 : usize = x.iter().fold(1, |mut acc, x| { acc = aoc::lcm(acc, x.1 - x.0); acc });
+        println!("x: {:?}, lcm: {}, {}, {}", x, lcm, lcm1, lcm2);
         if x.len() == 1 {
             break;
         }
