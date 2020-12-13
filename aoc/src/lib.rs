@@ -318,6 +318,46 @@ pub fn range_sum<T: num::Num + Copy>(cum_sum: &[T], a: usize, b: usize) -> T {
     }
 }
 
+pub fn egcd<T>(a: T, b: T) -> (T, T, T)
+where
+    T: std::cmp::PartialEq + num::Num + Copy,
+{
+    if a == T::zero() {
+        (b, T::zero(), T::one())
+    } else {
+        let (gcd, x, y) = egcd(b % a, a);
+        (gcd, y - (b / a) * x, x)
+    }
+}
+
+pub fn mod_inv<T>(x: T, n: T) -> Option<T>
+where
+    T: std::cmp::PartialEq + num::Num + Copy,
+{
+    let (g, x, _) = egcd(x, n);
+    if g == T::one() {
+        Some((x % n + n) % n)
+    } else {
+        None
+    }
+}
+
+pub fn chinese_remainder<'a, T>(residues: &[T], modulii: &'a [T]) -> Option<T>
+where
+    T: 'a + std::cmp::PartialEq + num::Num + Copy + std::iter::Product<&'a T> + std::ops::AddAssign,
+{
+    let prod = modulii.iter().product::<T>();
+
+    let mut sum = T::zero();
+
+    for (&residue, &modulus) in residues.iter().zip(modulii) {
+        let p = prod / modulus;
+        sum += residue * mod_inv(p, modulus)? * p
+    }
+
+    Some(sum % prod)
+}
+
 pub struct GridIteratorHelper {
     extents: (Point, Point),
     curr: Option<Point>,

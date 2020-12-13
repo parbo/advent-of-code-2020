@@ -9,37 +9,12 @@ fn part1(tt: &(usize, Vec<(usize, usize)>)) -> usize {
     (departure - tt.0) * bus
 }
 
-fn find_ix(a: usize, b: usize, align: usize) -> (usize, usize) {
-    let mut i = 0;
-    loop {
-        if b * ((i / b) + 1) == i + align {
-            return (i, a * b);
-        }
-        i += a;
-    }
-}
-
 fn part2(tt: &(usize, Vec<(usize, usize)>)) -> usize {
-    let mut b = tt.1.clone();
-    loop {
-        if b.len() == 1 {
-            break;
-        }
-        let mut x = vec![];
-        for i in (0..b.len()).step_by(2) {
-            if i + 1 < b.len() {
-                let (offs0, bus0) = b[i];
-                let (offs1, bus1) = b[i + 1];
-                let (offs, period) = find_ix(bus0, bus1, offs1 - offs0);
-                x.push((period - offs + offs0, period));
-            } else {
-                x.push(b[i]);
-            }
-        }
-        x.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
-        b = x.clone();
-    }
-    b[0].1 - b[0].0
+    let residues: Vec<i64> = tt.1.iter().map(|x| x.0 as i64).collect();
+    let modulii: Vec<i64> = tt.1.iter().map(|x| x.1 as i64).collect();
+    let prod : i64 = modulii.iter().product();
+    let crt = aoc::chinese_remainder(&residues, &modulii).unwrap();
+    (prod - crt) as usize
 }
 
 fn parse(lines: &[String]) -> (usize, Vec<(usize, usize)>) {
