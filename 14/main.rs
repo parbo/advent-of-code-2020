@@ -1,5 +1,6 @@
+use aoc::GridDrawer;
 use aoc::ParseError;
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::iter::*;
 use std::str::FromStr;
 
@@ -51,17 +52,18 @@ fn part1(ops: &[Op]) -> i64 {
 
 fn combos(f: &[i64], c: &mut HashSet<Vec<i64>>) {
     if !c.insert(f.to_owned()) {
-	return;
+        return;
     }
     for i in 0..f.len() {
-	let mut vv = f.to_owned();
-	vv[i] = 0;
-	combos(&vv, c);
+        let mut vv = f.to_owned();
+        vv[i] = 0;
+        combos(&vv, c);
     }
 }
 
 fn part2(ops: &[Op]) -> i64 {
-    let mut mem = HashMap::new();
+    let mut all_mem = vec![];
+    let mut mem = BTreeMap::new();
     let mut mask = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX".to_string();
     for op in ops {
         match op {
@@ -78,20 +80,49 @@ fn part2(ops: &[Op]) -> i64 {
                             base_addr = base_addr & !bit;
                             floating.push(bit);
                         }
-                        '0' => {},
+                        '0' => {}
                         '1' => base_addr = (base_addr & !bit) | bit,
                         _ => panic!(),
                     }
                 }
-		let mut c = HashSet::new();
-		combos(&floating, &mut c);
-		for combo in c {
-		    let s : i64 = combo.iter().sum();
-		    let a = base_addr | s;
+                let mut c = HashSet::new();
+                combos(&floating, &mut c);
+                for combo in c {
+                    let s: i64 = combo.iter().sum();
+                    let a = base_addr | s;
                     *mem.entry(a).or_insert(0) = *value;
-		}
+                }
             }
         }
+        all_mem.push(mem.clone());
+    }
+    let vals = mem.len();
+    let side = (vals as f64).sqrt() as usize + 1;
+    let mut gd = aoc::BitmapGridDrawer::new(
+        (1, 1),
+        |x| {
+            vec![(
+                ((x & (0xff << 16)) >> 16) as u8,
+                ((x & (0xff << 8)) >> 8) as u8,
+                (x & 0xff) as u8,
+            )]
+        },
+        "ppm/day14/part2",
+    );
+    for m in all_mem {
+        let mut grid = vec![vec![0; side]; side];
+        let mut x = 0;
+        let mut y = 0;
+        for (_, v) in m {
+            if x + 1 < side {
+                x += 1;
+            } else {
+                x = 0;
+                y += 1;
+            }
+            grid[y][x] = v;
+        }
+        gd.draw(&grid);
     }
     mem.values().sum()
 }
