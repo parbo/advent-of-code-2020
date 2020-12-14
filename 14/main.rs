@@ -50,12 +50,11 @@ fn part1(ops: &[Op]) -> i64 {
 }
 
 fn combos(f: &[i64], c: &mut HashSet<Vec<i64>>) {
-    let v = f.to_owned();
-    if !c.insert(v.clone()) {
+    if !c.insert(f.to_owned()) {
 	return;
     }
-    for i in 0..v.len() {
-	let mut vv = v.clone();
+    for i in 0..f.len() {
+	let mut vv = f.to_owned();
 	vv[i] = 0;
 	combos(&vv, c);
     }
