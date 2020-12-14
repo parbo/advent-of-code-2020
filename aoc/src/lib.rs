@@ -18,7 +18,6 @@ extern crate vecmath;
 
 pub use itertools::Itertools;
 pub use mod_exp::mod_exp;
-pub use modinverse::modinverse;
 pub use num::integer::*;
 pub use petgraph::algo;
 pub use petgraph::graph::Graph;
