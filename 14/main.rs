@@ -1,6 +1,6 @@
 use aoc::GridDrawer;
 use aoc::ParseError;
-use std::collections::{BTreeMap, HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap};
 use std::iter::*;
 use std::str::FromStr;
 
@@ -50,18 +50,7 @@ fn part1(ops: &[Op]) -> i64 {
     mem.values().sum()
 }
 
-fn combos(f: &[i64], c: &mut HashSet<Vec<i64>>) {
-    if !c.insert(f.to_owned()) {
-        return;
-    }
-    for i in 0..f.len() {
-        let mut vv = f.to_owned();
-        vv[i] = 0;
-        combos(&vv, c);
-    }
-}
-
-fn part2(ops: &[Op]) -> i64 {
+fn part2(ops: &[Op], draw: bool) -> i64 {
     let mut all_mem = vec![];
     let mut mem = BTreeMap::new();
     let mut mask = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX".to_string();
@@ -85,44 +74,52 @@ fn part2(ops: &[Op]) -> i64 {
                         _ => panic!(),
                     }
                 }
-                let mut c = HashSet::new();
-                combos(&floating, &mut c);
-                for combo in c {
-                    let s: i64 = combo.iter().sum();
+                let bits = floating.len();
+                for i in 0..(1 << bits) {
+                    let s: i64 = floating
+                        .iter()
+                        .enumerate()
+                        .filter(|(ix, _)| (i & (1 << ix)) != 0)
+                        .map(|(_, x)| *x)
+                        .sum();
                     let a = base_addr | s;
                     *mem.entry(a).or_insert(0) = *value;
                 }
             }
         }
-        all_mem.push(mem.clone());
-    }
-    let vals = mem.len();
-    let side = (vals as f64).sqrt() as usize + 1;
-    let mut gd = aoc::BitmapGridDrawer::new(
-        (1, 1),
-        |x| {
-            vec![(
-                ((x & (0xff << 16)) >> 16) as u8,
-                ((x & (0xff << 8)) >> 8) as u8,
-                (x & 0xff) as u8,
-            )]
-        },
-        "ppm/day14/part2",
-    );
-    for m in all_mem {
-        let mut grid = vec![vec![0; side]; side];
-        let mut x = 0;
-        let mut y = 0;
-        for (_, v) in m {
-            if x + 1 < side {
-                x += 1;
-            } else {
-                x = 0;
-                y += 1;
-            }
-            grid[y][x] = v;
+        if draw {
+            all_mem.push(mem.clone());
         }
-        gd.draw(&grid);
+    }
+    if draw {
+        let vals = mem.len();
+        let side = (vals as f64).sqrt() as usize + 1;
+        let mut gd = aoc::BitmapGridDrawer::new(
+            (1, 1),
+            |x| {
+                vec![(
+                    ((x & (0xff << 16)) >> 16) as u8,
+                    ((x & (0xff << 8)) >> 8) as u8,
+                    (x & 0xff) as u8,
+                )]
+            },
+            "ppm/day14/part2",
+        );
+        for m in all_mem {
+            let mut grid = vec![vec![0; side]; side];
+            let mut x = 0;
+            let mut y = 0;
+            for (_, v) in m {
+                if x + 1 < side {
+                    x += 1;
+                } else {
+                    x = 0;
+                    y += 1;
+                }
+                grid[y][x] = v;
+            }
+            gd.draw(&grid);
+        }
     }
     mem.values().sum()
 }
@@ -137,7 +134,7 @@ fn main() {
     let result = if part == 1 {
         part1(&parsed)
     } else {
-        part2(&parsed)
+        part2(&parsed, true)
     };
     println!("{}", result);
 }
@@ -155,6 +152,6 @@ mod tests {
             "mem[26] = 1".to_string(),
         ];
         let parsed = parse(&input);
-        assert_eq!(part2(&parsed), 208);
+        assert_eq!(part2(&parsed, false), 208);
     }
 }
