@@ -16,7 +16,10 @@ impl Rule {
     }
 }
 
-fn part1(input: &(Vec<Rule>, Vec<i64>, Vec<Vec<i64>>)) -> i64 {
+type Parsed = (Vec<Rule>, Vec<i64>, Vec<Vec<i64>>);
+type Answer = i64;
+
+fn part1(input: &Parsed) -> Answer {
     let (rules, _ticket, nearby) = input;
     let mut invalid = vec![];
     for ticket in nearby {
@@ -78,7 +81,7 @@ fn dfs(
     vec![]
 }
 
-fn find_rules(input: &(Vec<Rule>, Vec<i64>, Vec<Vec<i64>>)) -> Vec<Rule> {
+fn find_rules(input: &Parsed) -> Vec<Rule> {
     let (rules, ticket, nearby) = input;
     let valid: Vec<_> = nearby.iter().filter(|x| is_valid(x, rules)).collect();
     let mut valid_rules = vec![];
@@ -102,7 +105,7 @@ fn find_rules(input: &(Vec<Rule>, Vec<i64>, Vec<Vec<i64>>)) -> Vec<Rule> {
     r.into_iter().map(|(_, x)| x).collect()
 }
 
-fn part2(input: &(Vec<Rule>, Vec<i64>, Vec<Vec<i64>>)) -> i64 {
+fn part2(input: &Parsed) -> Answer {
     let (_, ticket, _) = input;
     let r = find_rules(input);
     let mut ans = vec![];
@@ -114,7 +117,7 @@ fn part2(input: &(Vec<Rule>, Vec<i64>, Vec<Vec<i64>>)) -> i64 {
     ans.iter().product()
 }
 
-fn parse(lines: &[String]) -> (Vec<Rule>, Vec<i64>, Vec<Vec<i64>>) {
+fn parse(lines: &[String]) -> Parsed {
     let mut rules = vec![];
     let mut ticket = vec![];
     let mut nearby = vec![];
