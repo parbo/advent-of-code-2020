@@ -1,39 +1,18 @@
-use aoc::ParseError;
 use std::iter::*;
-use std::str::FromStr;
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(parse_display::Display, parse_display::FromStr, Debug, Clone, PartialEq, Eq, Hash)]
+#[display("{thing}: {al}-{ah} or {bl}-{bh}")]
 struct Rule {
     thing: String,
-    low: (i64, i64),
-    high: (i64, i64),
+    al: i64,
+    ah: i64,
+    bl: i64,
+    bh: i64,
 }
 
 impl Rule {
     fn is_valid(&self, val: i64) -> bool {
-        (val >= self.low.0 && val <= self.low.1) || (val >= self.high.0 && val <= self.high.1)
-    }
-}
-
-impl FromStr for Rule {
-    type Err = ParseError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let parts = aoc::split_ch(s, ':');
-        if parts.len() == 2 {
-            let ranges: Vec<_> = aoc::split_str(parts[1], "or")
-                .iter()
-                .map(|x| aoc::split_ch(x, '-'))
-                .collect();
-            if ranges.len() == 2 && ranges[0].len() == 2 && ranges[1].len() == 2 {
-                return Ok(Rule {
-                    thing: parts[0].to_string(),
-                    low: (ranges[0][0].parse()?, ranges[0][1].parse()?),
-                    high: (ranges[1][0].parse()?, ranges[1][1].parse()?),
-                });
-            }
-        }
-        Err(ParseError::Generic)
+        (val >= self.al && val <= self.ah) || (val >= self.bl && val <= self.bh)
     }
 }
 
@@ -73,7 +52,12 @@ fn is_valid(ticket: &[i64], rules: &[Rule]) -> bool {
     return true;
 }
 
-fn dfs(g: &[(usize, Vec<Rule>)], ix: usize, l: usize, sofar: &[(usize, Rule)]) -> Vec<(usize, Rule)> {
+fn dfs(
+    g: &[(usize, Vec<Rule>)],
+    ix: usize,
+    l: usize,
+    sofar: &[(usize, Rule)],
+) -> Vec<(usize, Rule)> {
     if ix == l {
         return sofar.to_vec();
     }
@@ -99,16 +83,16 @@ fn find_rules(input: &(Vec<Rule>, Vec<i64>, Vec<Vec<i64>>)) -> Vec<Rule> {
     let valid: Vec<_> = nearby.iter().filter(|x| is_valid(x, rules)).collect();
     let mut valid_rules = vec![];
     for i in 0..ticket.len() {
-	let mut vr = vec![];
+        let mut vr = vec![];
         'rule: for rule in rules {
             for t in &valid {
                 if !rule.is_valid(t[i]) {
-		    continue 'rule;
+                    continue 'rule;
                 }
             }
-	    vr.push(rule.clone());
+            vr.push(rule.clone());
         }
-	valid_rules.push((i, vr));
+        valid_rules.push((i, vr));
     }
     // Sort by most constrained
     valid_rules.sort_by(|a, b| a.1.len().cmp(&b.1.len()));
@@ -224,18 +208,24 @@ mod tests {
             vec![
                 Rule {
                     thing: "row".to_string(),
-                    low: (0, 5),
-                    high: (8, 19)
+                    al: 0,
+                    ah: 5,
+                    bl: 8,
+                    bh: 19,
                 },
                 Rule {
                     thing: "class".to_string(),
-                    low: (0, 1),
-                    high: (4, 19)
+                    al: 0,
+                    ah: 1,
+                    bl: 4,
+                    bh: 19,
                 },
                 Rule {
                     thing: "seat".to_string(),
-                    low: (0, 13),
-                    high: (16, 19)
+                    al: 0,
+                    ah: 13,
+                    bl: 16,
+                    bh: 19,
                 }
             ]
         );
