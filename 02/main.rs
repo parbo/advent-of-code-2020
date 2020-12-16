@@ -1,27 +1,12 @@
-use aoc::{self, ParseError};
 use std::iter::*;
-use std::str::FromStr;
 
-#[derive(Debug)]
+#[derive(parse_display::Display, parse_display::FromStr, Debug)]
+#[display("{min}-{max} {c}: {password}")]
 struct Policy {
     min: usize,
     max: usize,
     c: char,
     password: String,
-}
-
-impl FromStr for Policy {
-    type Err = ParseError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let parts = aoc::split(s, |c| c == '-' || c == ':' || c == ' ');
-        Ok(Policy {
-            min: parts[0].parse()?,
-            max: parts[1].parse()?,
-            c: aoc::parse_char(parts[2], 0)?,
-            password: parts[3].to_string(),
-        })
-    }
 }
 
 impl Policy {
