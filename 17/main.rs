@@ -2,16 +2,6 @@ use aoc::{vec4_add, vec_add, Vec3, Vec4};
 use std::collections::HashMap;
 use std::iter::*;
 
-// #[derive(parse_display::Display, parse_display::FromStr, Debug, Clone, PartialEq, Eq, Hash)]
-// #[display("{thing}: {al}-{ah} or {bl}-{bh}")]
-// struct Rule {
-//     thing: String,
-//     al: i64,
-//     ah: i64,
-//     bl: i64,
-//     bh: i64,
-// }
-
 type Parsed = HashMap<Vec3, char>;
 type Answer = usize;
 
@@ -187,7 +177,46 @@ fn parse(lines: &[String]) -> Parsed {
 fn main() {
     let (part, lines) = aoc::read_lines();
     let parsed = parse(&lines);
-    let result = if part == 1 {
+    let result = if part == 3 {
+        let mut window = kiss3d::window::Window::new_with_size("Day 17", 1280, 720);
+
+        window.set_light(kiss3d::light::Light::StickToCamera);
+
+        let d = dirs();
+        let mut g = parsed.clone();
+        let mut cubes = vec![];
+        let eye = kiss3d::nalgebra::Point3::new(40.0f32, 15.0, 20.0);
+        let at = kiss3d::nalgebra::Point3::origin();
+        let mut camera = kiss3d::camera::ArcBall::new(eye, at);
+        let mut frame = 0;
+        while window.render_with_camera(&mut camera) {
+            if frame % 20 == 0 {
+                for mut c in cubes {
+                    window.remove_node(&mut c);
+                }
+                let mut new_cubes = vec![];
+                for (p, v) in &g {
+                    if *v == '#' {
+                        let mut c = window.add_cube(1.0, 1.0, 1.0);
+                        c.append_translation(&kiss3d::nalgebra::Translation3::new(
+                            p[0] as f32,
+                            p[1] as f32,
+                            p[2] as f32,
+                        ));
+                        c.set_color(0.0, 1.0, 0.0);
+                        new_cubes.push(c);
+                    }
+                }
+                g = step(&g, &d);
+                cubes = new_cubes;
+            }
+            // rotate the arc-ball camera.
+            let curr_yaw = camera.yaw();
+            camera.set_yaw(curr_yaw + 0.05);
+            frame += 1;
+        }
+        0
+    } else if part == 1 {
         part1(&parsed)
     } else {
         part2(&parsed)

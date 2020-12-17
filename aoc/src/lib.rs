@@ -58,6 +58,7 @@ pub use self::vecmath::vec3_normalized as vec_normalize;
 pub use self::vecmath::vec3_scale as vec_mul;
 pub use self::vecmath::vec3_square_len as vec_square_length;
 pub use self::vecmath::vec3_sub as vec_sub;
+pub use self::vecmath::vec4_add as vec4_add;
 
 pub fn length(v: FVec3) -> f64 {
     vec_square_length(v).sqrt()

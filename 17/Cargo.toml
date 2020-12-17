@@ -6,6 +6,7 @@ edition = '2018'
 [dependencies]
 aoc = {path = "../aoc"}
 parse-display = "0.4.0"
+kiss3d = "0.25"
 
 [[bin]]
 name = 'day17'
