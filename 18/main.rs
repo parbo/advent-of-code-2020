@@ -48,44 +48,44 @@ fn prec2(s: Ops) -> i64 {
 fn calc<F>(s: &[Ops], prec: F) -> Option<i64> where F: Fn(Ops) -> i64 {
     // Convert to postfix
     let mut stack = VecDeque::new();
-    let mut out = vec![];
-    for o in s {
-        match o {
-            Ops::LParen => stack.push_back(o.clone()),
+    let mut postfix = vec![];
+    for op in s {
+        match op {
+            Ops::LParen => stack.push_back(*op),
             Ops::RParen => {
 		while let Some(x) = stack.back() {
 		    if *x == Ops::LParen {
 			stack.pop_back();
 			break;
 		    }
-		    out.push(*x);
+		    postfix.push(*x);
 		    stack.pop_back();
 		}
 	    },
             Ops::Add | Ops::Mul => {
 		while let Some(x) = stack.back() {
-		    if prec(*o) <= prec(*x) {
-			out.push(*x);
+		    if prec(*op) <= prec(*x) {
+			postfix.push(*x);
 			stack.pop_back();
 		    } else {
 			break;
 		    }
 		}
-		stack.push_back(*o);
+		stack.push_back(*op);
 	    }
-            x => out.push(*x),
+            x => postfix.push(*x),
         }
     }
     while let Some(x) = stack.pop_back() {
-	out.push(x);
+	postfix.push(x);
     }
-    // evaluate postfix
-    for o in out {
-	if let Ops::Num(_) = o {
-	    stack.push_back(o);
+    // Evaluate postfix
+    for op in postfix {
+	if let Ops::Num(_) = op {
+	    stack.push_back(op);
 	} else {
 	    if let Some((Ops::Num(a), Ops::Num(b))) = stack.pop_back().zip(stack.pop_back()) {
-		if o == Ops::Mul {
+		if op == Ops::Mul {
 		    stack.push_back(Ops::Num(a * b));
 		} else {
 		    stack.push_back(Ops::Num(a + b));
