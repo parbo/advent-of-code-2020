@@ -29,38 +29,15 @@ impl FromStr for Ops {
     }
 }
 
-fn calc(s: &[Ops], a: i64) -> (i64, usize) {
-    let mut op1 = a;
-    let mut op = None;
-    let mut i = 0;
-    while i < s.len() {
-        let o = s[i];
-        i += 1;
-        match o {
-            Ops::LParen => {
-                let (val, eaten) = calc(&s[i..], 0);
-                op1 = match op {
-                    Some(Ops::Add) => op1 + val,
-                    Some(Ops::Mul) => op1 * val,
-                    _  => val,
-                };
-                i += eaten;
-            }
-            Ops::RParen => break,
-            Ops::Add | Ops:: Mul => op = Some(o),
-            Ops::Num(op2) => {
-                op1 = match op {
-                    Some(Ops::Add) => op1 + op2,
-                    Some(Ops::Mul) => op1 * op2,
-                    _ => op2,
-                }
-            }
-        }
+fn prec1(s: Ops) -> i64 {
+    match s {
+	Ops::Add => 1,
+	Ops::Mul => 1,
+	_ => -1,
     }
-    (op1, i)
 }
 
-fn prec(s: Ops) -> i64 {
+fn prec2(s: Ops) -> i64 {
     match s {
 	Ops::Add => 2,
 	Ops::Mul => 1,
@@ -68,7 +45,7 @@ fn prec(s: Ops) -> i64 {
     }
 }
 
-fn calc2(s: &[Ops]) -> Option<i64> {
+fn calc<F>(s: &[Ops], prec: F) -> Option<i64> where F: Fn(Ops) -> i64 {
     // Convert to postfix
     let mut stack = VecDeque::new();
     let mut out = vec![];
@@ -126,11 +103,11 @@ fn calc2(s: &[Ops]) -> Option<i64> {
 }
 
 fn part1(input: &Parsed) -> Answer {
-    input.iter().map(|x| calc(x, 0).0).sum()
+    input.iter().map(|x| calc(x, prec1).unwrap()).sum()
 }
 
 fn part2(input: &Parsed) -> Answer {
-    input.iter().map(|x| calc2(x).unwrap()).sum()
+    input.iter().map(|x| calc(x, prec2).unwrap()).sum()
 }
 
 fn tokenize(line: &str) -> Vec<Ops> {
@@ -189,28 +166,28 @@ mod tests {
     #[test]
     fn test_calc() {
         let parsed = tokenize("1 + (2 * 3) + (4 * (5 + 6))");
-        assert_eq!(calc(&parsed, 0), (51, parsed.len()));
+        assert_eq!(calc(&parsed, prec1), Some(51));
         let parsed = tokenize("2 * 3 + (4 * 5)");
-        assert_eq!(calc(&parsed, 0), (26, parsed.len()));
+        assert_eq!(calc(&parsed, prec1), Some(26));
         let parsed = tokenize("5 + (8 * 3 + 9 + 3 * 4 * 3)");
-        assert_eq!(calc(&parsed, 0), (437, parsed.len()));
+        assert_eq!(calc(&parsed, prec1), Some(437));
         let parsed = tokenize("5 * 9 * (7 * 3 * 3 + 9 * 3 + (8 + 6 * 4))");
-        assert_eq!(calc(&parsed, 0), (12240, parsed.len()));
+        assert_eq!(calc(&parsed, prec1), Some(12240));
         let parsed = tokenize("((2 + 4 * 9) * (6 + 9 * 8 + 6) + 6) + 2 + 4 * 2");
-        assert_eq!(calc(&parsed, 0), (13632, parsed.len()));
+        assert_eq!(calc(&parsed, prec1), Some(13632));
     }
 
     #[test]
     fn test_calc2() {
         let parsed = tokenize("1 + (2 * 3) + (4 * (5 + 6))");
-        assert_eq!(calc2(&parsed), Some(51));
+        assert_eq!(calc(&parsed, prec2), Some(51));
         let parsed = tokenize("2 * 3 + (4 * 5)");
-        assert_eq!(calc2(&parsed), Some(46));
+        assert_eq!(calc(&parsed, prec2), Some(46));
         let parsed = tokenize("5 + (8 * 3 + 9 + 3 * 4 * 3)");
-        assert_eq!(calc2(&parsed), Some(1445));
+        assert_eq!(calc(&parsed, prec2), Some(1445));
         let parsed = tokenize("5 * 9 * (7 * 3 * 3 + 9 * 3 + (8 + 6 * 4))");
-        assert_eq!(calc2(&parsed), Some(669060));
+        assert_eq!(calc(&parsed, prec2), Some(669060));
         let parsed = tokenize("((2 + 4 * 9) * (6 + 9 * 8 + 6) + 6) + 2 + 4 * 2");
-        assert_eq!(calc2(&parsed), Some(23340));
+        assert_eq!(calc(&parsed, prec2), Some(23340));
     }
 }
