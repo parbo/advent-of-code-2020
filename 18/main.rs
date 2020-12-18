@@ -1,34 +1,57 @@
 use std::iter::*;
 use std::collections::VecDeque;
+use aoc::ParseError;
+use std::str::FromStr;
 
-type Parsed = Vec<Vec<String>>;
+type Parsed = Vec<Vec<Ops>>;
 type Answer = i64;
 
-fn calc(s: &[String], a: i64) -> (i64, usize) {
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Ops {
+    Add,
+    Mul,
+    Num(i64),
+    LParen,
+    RParen
+}
+
+impl FromStr for Ops {
+    type Err = ParseError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+	match s {
+	    "(" => Ok(Ops::LParen),
+	    ")" => Ok(Ops::RParen),
+	    "*" => Ok(Ops::Mul),
+	    "+" => Ok(Ops::Add),
+	    x => Ok(Ops::Num(x.parse()?)),
+	}
+    }
+}
+
+fn calc(s: &[Ops], a: i64) -> (i64, usize) {
     let mut op1 = a;
     let mut op = None;
     let mut i = 0;
     while i < s.len() {
-        let o = s[i].as_str();
+        let o = s[i];
         i += 1;
         match o {
-            "(" => {
+            Ops::LParen => {
                 let (val, eaten) = calc(&s[i..], 0);
                 op1 = match op {
-                    Some("+") => op1 + val,
-                    Some("*") => op1 * val,
-                    _ => val,
+                    Some(Ops::Add) => op1 + val,
+                    Some(Ops::Mul) => op1 * val,
+                    _  => val,
                 };
                 i += eaten;
             }
-            ")" => break,
-            "+" => op = Some("+"),
-            "*" => op = Some("*"),
-            x => {
-                let op2 = x.parse::<i64>().unwrap();
+            Ops::RParen => break,
+            Ops::Add | Ops:: Mul => op = Some(o),
+            Ops::Num(op2) => {
                 op1 = match op {
-                    Some("+") => op1 + op2,
-                    Some("*") => op1 * op2,
+                    Some(Ops::Add) => op1 + op2,
+                    Some(Ops::Mul) => op1 * op2,
                     _ => op2,
                 }
             }
@@ -37,43 +60,43 @@ fn calc(s: &[String], a: i64) -> (i64, usize) {
     (op1, i)
 }
 
-fn prec(s: &str) -> i64 {
+fn prec(s: Ops) -> i64 {
     match s {
-	"+" => 2,
-	"*" => 1,
+	Ops::Add => 2,
+	Ops::Mul => 1,
 	_ => -1,
     }
 }
 
-fn calc2(s: &[String]) -> i64{
+fn calc2(s: &[Ops]) -> Option<i64> {
     // Convert to postfix
     let mut stack = VecDeque::new();
-    let mut out : Vec<String> = vec![];
+    let mut out = vec![];
     for o in s {
-        match o.as_str() {
-            "(" => stack.push_back(o.clone()),
-            ")" => {
+        match o {
+            Ops::LParen => stack.push_back(o.clone()),
+            Ops::RParen => {
 		while let Some(x) = stack.back() {
-		    if x == "(" {
+		    if *x == Ops::LParen {
 			stack.pop_back();
 			break;
 		    }
-		    out.push(x.to_string());
+		    out.push(*x);
 		    stack.pop_back();
 		}
 	    },
-            "+" | "*" => {
+            Ops::Add | Ops::Mul => {
 		while let Some(x) = stack.back() {
-		    if prec(o) <= prec(&x) {
-			out.push(x.to_string());
+		    if prec(*o) <= prec(*x) {
+			out.push(*x);
 			stack.pop_back();
 		    } else {
 			break;
 		    }
 		}
-		stack.push_back(o.clone());
+		stack.push_back(*o);
 	    }
-            x => out.push(x.to_string()),
+            x => out.push(*x),
         }
     }
     while let Some(x) = stack.pop_back() {
@@ -81,21 +104,25 @@ fn calc2(s: &[String]) -> i64{
     }
     // evaluate postfix
     for o in out {
-	match o.as_str() {
-	    "*" => {
-		let a = stack.pop_back().unwrap();
-		let b = stack.pop_back().unwrap();
-		stack.push_back((a.parse::<i64>().unwrap() * b.parse::<i64>().unwrap()).to_string());
+	if let Ops::Num(_) = o {
+	    stack.push_back(o);
+	} else {
+	    if let Ops::Num(a) = stack.pop_back()? {
+		if let Ops::Num(b) = stack.pop_back()? {
+		    if o == Ops::Mul {
+			stack.push_back(Ops::Num(a * b));
+		    } else {
+			stack.push_back(Ops::Num(a + b));
+		    }
+		}
 	    }
-	    "+" => {
-		let a = stack.pop_back().unwrap();
-		let b = stack.pop_back().unwrap();
-		stack.push_back((a.parse::<i64>().unwrap() + b.parse::<i64>().unwrap()).to_string());
-	    }
-	    x => stack.push_back(x.to_string()),
 	}
     }
-    stack[0].parse::<i64>().unwrap()
+    if let Some(Ops::Num(a)) = stack.back() {
+	Some(*a)
+    } else {
+	None
+    }
 }
 
 fn part1(input: &Parsed) -> Answer {
@@ -103,35 +130,35 @@ fn part1(input: &Parsed) -> Answer {
 }
 
 fn part2(input: &Parsed) -> Answer {
-    input.iter().map(|x| calc2(x)).sum()
+    input.iter().map(|x| calc2(x).unwrap()).sum()
 }
 
-fn parse_line(line: &str) -> Vec<String> {
+fn tokenize(line: &str) -> Vec<Ops> {
     let mut y = vec![];
     let mut ix = 0;
     for (i, c) in line.chars().enumerate() {
         match c {
             ' ' => {
-                let s = line[ix..i].to_string();
+                let s = &line[ix..i];
                 if !s.is_empty() {
-                    y.push(s);
+                    y.push(s.parse().unwrap());
                 }
                 ix = i + 1
             }
             '(' | ')' => {
-                let s = line[ix..i].to_string();
+                let s = &line[ix..i];
                 if !s.is_empty() {
-                    y.push(s);
+                    y.push(s.parse().unwrap());
                 }
-                y.push(c.to_string());
+                y.push(c.to_string().parse().unwrap());
                 ix = i + 1
             }
             _ => {}
         }
     }
-    let s = line[ix..].to_string();
+    let s = &line[ix..];
     if !s.is_empty() {
-        y.push(s);
+        y.push(s.parse().unwrap());
     }
     y
 }
@@ -139,7 +166,7 @@ fn parse_line(line: &str) -> Vec<String> {
 fn parse(lines: &[String]) -> Parsed {
     let mut x = vec![];
     for line in lines {
-        x.push(parse_line(&line));
+        x.push(tokenize(&line));
     }
     x
 }
@@ -161,29 +188,29 @@ mod tests {
 
     #[test]
     fn test_calc() {
-        let parsed = parse_line("1 + (2 * 3) + (4 * (5 + 6))");
+        let parsed = tokenize("1 + (2 * 3) + (4 * (5 + 6))");
         assert_eq!(calc(&parsed, 0), (51, parsed.len()));
-        let parsed = parse_line("2 * 3 + (4 * 5)");
+        let parsed = tokenize("2 * 3 + (4 * 5)");
         assert_eq!(calc(&parsed, 0), (26, parsed.len()));
-        let parsed = parse_line("5 + (8 * 3 + 9 + 3 * 4 * 3)");
+        let parsed = tokenize("5 + (8 * 3 + 9 + 3 * 4 * 3)");
         assert_eq!(calc(&parsed, 0), (437, parsed.len()));
-        let parsed = parse_line("5 * 9 * (7 * 3 * 3 + 9 * 3 + (8 + 6 * 4))");
+        let parsed = tokenize("5 * 9 * (7 * 3 * 3 + 9 * 3 + (8 + 6 * 4))");
         assert_eq!(calc(&parsed, 0), (12240, parsed.len()));
-        let parsed = parse_line("((2 + 4 * 9) * (6 + 9 * 8 + 6) + 6) + 2 + 4 * 2");
+        let parsed = tokenize("((2 + 4 * 9) * (6 + 9 * 8 + 6) + 6) + 2 + 4 * 2");
         assert_eq!(calc(&parsed, 0), (13632, parsed.len()));
     }
 
     #[test]
     fn test_calc2() {
-        let parsed = parse_line("1 + (2 * 3) + (4 * (5 + 6))");
-        assert_eq!(calc2(&parsed), 51);
-        let parsed = parse_line("2 * 3 + (4 * 5)");
-        assert_eq!(calc2(&parsed), 46);
-        let parsed = parse_line("5 + (8 * 3 + 9 + 3 * 4 * 3)");
-        assert_eq!(calc2(&parsed), 1445);
-        let parsed = parse_line("5 * 9 * (7 * 3 * 3 + 9 * 3 + (8 + 6 * 4))");
-        assert_eq!(calc2(&parsed), 669060);
-        let parsed = parse_line("((2 + 4 * 9) * (6 + 9 * 8 + 6) + 6) + 2 + 4 * 2");
-        assert_eq!(calc2(&parsed), 23340);
+        let parsed = tokenize("1 + (2 * 3) + (4 * (5 + 6))");
+        assert_eq!(calc2(&parsed), Some(51));
+        let parsed = tokenize("2 * 3 + (4 * 5)");
+        assert_eq!(calc2(&parsed), Some(46));
+        let parsed = tokenize("5 + (8 * 3 + 9 + 3 * 4 * 3)");
+        assert_eq!(calc2(&parsed), Some(1445));
+        let parsed = tokenize("5 * 9 * (7 * 3 * 3 + 9 * 3 + (8 + 6 * 4))");
+        assert_eq!(calc2(&parsed), Some(669060));
+        let parsed = tokenize("((2 + 4 * 9) * (6 + 9 * 8 + 6) + 6) + 2 + 4 * 2");
+        assert_eq!(calc2(&parsed), Some(23340));
     }
 }
