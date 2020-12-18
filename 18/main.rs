@@ -139,11 +139,7 @@ fn part2(input: &Parsed) -> Answer {
 }
 
 fn parse(lines: &[String]) -> Parsed {
-    let mut x = vec![];
-    for line in lines {
-        x.push(tokenize(&line));
-    }
-    x
+    lines.iter().map(|line| tokenize(line)).collect()
 }
 
 fn main() {
