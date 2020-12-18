@@ -29,6 +29,36 @@ impl FromStr for Ops {
     }
 }
 
+fn tokenize(line: &str) -> Vec<Ops> {
+    let mut y = vec![];
+    let mut ix = 0;
+    for (i, c) in line.chars().enumerate() {
+        match c {
+            ' ' => {
+                let s = &line[ix..i];
+                if !s.is_empty() {
+                    y.push(s.parse().unwrap());
+                }
+                ix = i + 1
+            }
+            '(' | ')' => {
+                let s = &line[ix..i];
+                if !s.is_empty() {
+                    y.push(s.parse().unwrap());
+                }
+                y.push(c.to_string().parse().unwrap());
+                ix = i + 1
+            }
+            _ => {}
+        }
+    }
+    let s = &line[ix..];
+    if !s.is_empty() {
+        y.push(s.parse().unwrap());
+    }
+    y
+}
+
 fn prec1(s: Ops) -> i64 {
     match s {
 	Ops::Add => 1,
@@ -106,36 +136,6 @@ fn part1(input: &Parsed) -> Answer {
 
 fn part2(input: &Parsed) -> Answer {
     input.iter().map(|x| calc(x, prec2).unwrap()).sum()
-}
-
-fn tokenize(line: &str) -> Vec<Ops> {
-    let mut y = vec![];
-    let mut ix = 0;
-    for (i, c) in line.chars().enumerate() {
-        match c {
-            ' ' => {
-                let s = &line[ix..i];
-                if !s.is_empty() {
-                    y.push(s.parse().unwrap());
-                }
-                ix = i + 1
-            }
-            '(' | ')' => {
-                let s = &line[ix..i];
-                if !s.is_empty() {
-                    y.push(s.parse().unwrap());
-                }
-                y.push(c.to_string().parse().unwrap());
-                ix = i + 1
-            }
-            _ => {}
-        }
-    }
-    let s = &line[ix..];
-    if !s.is_empty() {
-        y.push(s.parse().unwrap());
-    }
-    y
 }
 
 fn parse(lines: &[String]) -> Parsed {
