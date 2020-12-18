@@ -120,6 +120,37 @@ fn part1(input: &Parsed) -> Answer {
     g.iter().filter(|(_p, v)| **v == '#').count()
 }
 
+fn step4(g: &HashMap<Vec4, char>, d: &[Vec4]) -> HashMap<Vec4, char> {
+    let mut newg = g.clone();
+    let ([min_x, min_y, min_z, min_w], [max_x, max_y, max_z, max_w]) = extents4(&newg);
+    for w in (min_w - 1)..=(max_w + 1) {
+        for z in (min_z - 1)..=(max_z + 1) {
+            for y in (min_y - 1)..=(max_y + 1) {
+                for x in (min_x - 1)..=(max_x + 1) {
+                    let p = [x, y, z, w];
+                    let mut active = 0;
+                    let c = g.get(&p).unwrap_or(&'.');
+                    for dir in d {
+                        let np = vec4_add(p, *dir);
+                        match g.get(&np) {
+                            Some('#') => {
+                                active += 1;
+                            }
+                            _ => {}
+                        }
+                    }
+                    if *c == '#' && !(active == 2 || active == 3) {
+                        newg.remove(&p);
+                    } else if *c == '.' && active == 3 {
+                        newg.insert(p, '#');
+                    }
+                }
+            }
+        }
+    }
+    newg
+}
+
 fn part2(input: &Parsed) -> Answer {
     let d = dirs4();
     let mut i = 0;
@@ -128,33 +159,7 @@ fn part2(input: &Parsed) -> Answer {
         g.insert([*x, *y, *z, 0], *v);
     }
     loop {
-        let mut newg = g.clone();
-        let ([min_x, min_y, min_z, min_w], [max_x, max_y, max_z, max_w]) = extents4(&newg);
-        for w in (min_w - 1)..=(max_w + 1) {
-            for z in (min_z - 1)..=(max_z + 1) {
-                for y in (min_y - 1)..=(max_y + 1) {
-                    for x in (min_x - 1)..=(max_x + 1) {
-                        let p = [x, y, z, w];
-                        let mut active = 0;
-                        let c = g.get(&p).unwrap_or(&'.');
-                        for dir in &d {
-                            let np = vec4_add(p, *dir);
-                            match g.get(&np) {
-                                Some('#') => {
-                                    active += 1;
-                                }
-                                _ => {}
-                            }
-                        }
-                        if *c == '#' && !(active == 2 || active == 3) {
-                            newg.remove(&p);
-                        } else if *c == '.' && active == 3 {
-                            newg.insert(p, '#');
-                        }
-                    }
-                }
-            }
-        }
+        let newg = step4(&g, &d);
         if i == 6 {
             break;
         }
@@ -208,6 +213,49 @@ fn main() {
                     }
                 }
                 g = step(&g, &d);
+                cubes = new_cubes;
+            }
+            // rotate the arc-ball camera.
+            let curr_yaw = camera.yaw();
+            camera.set_yaw(curr_yaw + 0.05);
+            frame += 1;
+        }
+        0
+    } else if part == 4 {
+        let mut window = kiss3d::window::Window::new_with_size("Day 17", 1280, 720);
+
+        window.set_light(kiss3d::light::Light::StickToCamera);
+
+        let d = dirs4();
+        let mut g = HashMap::new();
+        for ([x, y, z], v) in &parsed {
+            g.insert([*x, *y, *z, 0], *v);
+        }
+        let mut cubes = vec![];
+        let eye = kiss3d::nalgebra::Point3::new(40.0f32, 15.0, 20.0);
+        let at = kiss3d::nalgebra::Point3::origin();
+        let mut camera = kiss3d::camera::ArcBall::new(eye, at);
+        let mut frame = 0;
+        while window.render_with_camera(&mut camera) {
+            if frame % 20 == 0 {
+                for mut c in cubes {
+                    window.remove_node(&mut c);
+                }
+                let mut new_cubes = vec![];
+                for (p, v) in &g {
+                    if *v == '#' {
+                        let mut c = window.add_cube(1.0, 1.0, 1.0);
+                        c.append_translation(&kiss3d::nalgebra::Translation3::new(
+                            p[0] as f32,
+                            p[1] as f32,
+                            p[2] as f32,
+                        ));
+			let col = p[3] as f32 / (frame / 20 + 1) as f32;
+                        c.set_color(0.0, col, 0.0);
+                        new_cubes.push(c);
+                    }
+                }
+                g = step4(&g, &d);
                 cubes = new_cubes;
             }
             // rotate the arc-ball camera.
