@@ -84,13 +84,11 @@ fn calc<F>(s: &[Ops], prec: F) -> Option<i64> where F: Fn(Ops) -> i64 {
 	if let Ops::Num(_) = o {
 	    stack.push_back(o);
 	} else {
-	    if let Ops::Num(a) = stack.pop_back()? {
-		if let Ops::Num(b) = stack.pop_back()? {
-		    if o == Ops::Mul {
-			stack.push_back(Ops::Num(a * b));
-		    } else {
-			stack.push_back(Ops::Num(a + b));
-		    }
+	    if let Some((Ops::Num(a), Ops::Num(b))) = stack.pop_back().zip(stack.pop_back()) {
+		if o == Ops::Mul {
+		    stack.push_back(Ops::Num(a * b));
+		} else {
+		    stack.push_back(Ops::Num(a + b));
 		}
 	    }
 	}
