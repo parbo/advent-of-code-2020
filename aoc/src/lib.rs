@@ -10,6 +10,7 @@ use std::iter::*;
 use std::marker::PhantomData;
 use std::num::ParseIntError;
 use std::path::{Path, PathBuf};
+use std::str::FromStr;
 
 #[macro_use]
 extern crate lazy_static;
@@ -58,7 +59,7 @@ pub use self::vecmath::vec3_normalized as vec_normalize;
 pub use self::vecmath::vec3_scale as vec_mul;
 pub use self::vecmath::vec3_square_len as vec_square_length;
 pub use self::vecmath::vec3_sub as vec_sub;
-pub use self::vecmath::vec4_add as vec4_add;
+pub use self::vecmath::vec4_add;
 
 pub fn length(v: FVec3) -> f64 {
     vec_square_length(v).sqrt()
@@ -185,6 +186,19 @@ where
                 .collect::<Vec<_>>()
         })
         .filter(|g| !g.is_empty())
+        .collect()
+}
+
+pub fn parse_to_vec_of<'a, I, J, T, E>(items: I) -> Result<Vec<T>, ParseError>
+where
+    I: IntoIterator<Item = &'a J>,
+    J: AsRef<str> + 'a,
+    T: FromStr<Err = E>,
+    E: Into<ParseError>,
+{
+    items
+        .into_iter()
+        .map(|x| T::from_str(AsRef::as_ref(x)).map_err(|x| -> ParseError { x.into() }))
         .collect()
 }
 
@@ -344,7 +358,12 @@ where
 
 pub fn chinese_remainder<'a, T>(residues: &[T], modulii: &'a [T]) -> Option<T>
 where
-    T: 'a + std::cmp::PartialEq + num::Signed + Copy + std::iter::Product<&'a T> + std::ops::AddAssign,
+    T: 'a
+        + std::cmp::PartialEq
+        + num::Signed
+        + Copy
+        + std::iter::Product<&'a T>
+        + std::ops::AddAssign,
 {
     let prod = modulii.iter().product::<T>();
 
@@ -802,10 +821,7 @@ pub fn read_lines() -> (i32, Vec<String>) {
     let part = args[1].parse::<i32>().unwrap();
     let filename = &args[2];
 
-    (
-        part,
-	read_lines_from(filename),
-    )
+    (part, read_lines_from(filename))
 }
 
 #[cfg(test)]
@@ -826,8 +842,8 @@ mod tests {
 
     #[test]
     fn test_chinese_remainder() {
-	let modulii = [3,5,7];
-	let residues = [2,3,2];
-	assert_eq!(chinese_remainder(&residues, &modulii), Some(23));
+        let modulii = [3, 5, 7];
+        let residues = [2, 3, 2];
+        assert_eq!(chinese_remainder(&residues, &modulii), Some(23));
     }
 }

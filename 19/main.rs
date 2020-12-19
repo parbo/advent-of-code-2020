@@ -14,33 +14,22 @@ impl FromStr for Rule {
     type Err = ParseError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if s.contains('|') || s.contains(' ') {
+        if let Ok(n) = s.parse::<usize>() {
+            Ok(Rule::Ref(vec![n], vec![]))
+        } else if s.len() == 3 {
+            s.chars()
+                .nth(1)
+                .map(|c| Rule::Char(c))
+                .ok_or(aoc::ParseError::Generic)
+        } else {
             let parts = aoc::split_ch(s, '|');
-            let a = aoc::split_ch(parts[0], ' ')
-                .iter()
-                .map(|x| x.parse().unwrap())
-                .collect();
+            let a = aoc::parse_to_vec_of(&aoc::split_ch(parts[0], ' '))?;
             let b = if parts.len() > 1 {
-                aoc::split_ch(parts[1], ' ')
-                    .iter()
-                    .map(|x| x.parse().unwrap())
-                    .collect()
+                aoc::parse_to_vec_of(&aoc::split_ch(parts[1], ' '))?
             } else {
                 vec![]
             };
             Ok(Rule::Ref(a, b))
-        } else {
-            if let Ok(n) = s.parse::<usize>() {
-                Ok(Rule::Ref(vec![n], vec![]))
-            } else if s.len() == 3 {
-                if let Some(c) = s.chars().nth(1) {
-                    Ok(Rule::Char(c))
-                } else {
-                    Err(aoc::ParseError::Generic)
-                }
-            } else {
-                Err(aoc::ParseError::Generic)
-            }
         }
     }
 }
@@ -125,24 +114,18 @@ fn part2(input: &Parsed) -> Answer {
 }
 
 fn parse(lines: &[String]) -> Parsed {
-    let mut r = HashMap::new();
-    let mut s = vec![];
-    let mut state = 0;
-    for line in lines {
-        if line.is_empty() {
-            state = 1
-        }
-        if state == 0 {
+    let sections = aoc::split_by_empty_line(lines);
+    let r: HashMap<_, _> = sections[0]
+        .iter()
+        .map(|line| {
             let parts = aoc::split_ch(line, ':');
-            r.insert(
+            (
                 parts[0].parse::<usize>().unwrap(),
                 parts[1].parse::<Rule>().unwrap(),
-            );
-        } else {
-            s.push(line.clone());
-        }
-    }
-    (r, s)
+            )
+        })
+        .collect();
+    (r, sections[1].iter().map(|s| s.to_string()).collect())
 }
 
 fn main() {
