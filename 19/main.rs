@@ -7,43 +7,31 @@ use std::str::FromStr;
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 enum Rule {
     Char(char),
-    One(usize),
-    OneOr(usize, usize),
-    Two(usize, usize),
-    TwoOr((usize, usize), (usize, usize)),
-    Four(usize, usize, usize, usize),
+    Ref(Vec<usize>, Vec<usize>),
 }
 
 impl FromStr for Rule {
     type Err = ParseError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if s.contains('|') {
-            let parts = aoc::split(s, |c| c == '|' || c == ' ');
-            match parts.len() {
-                4 => Ok(Rule::TwoOr(
-                    (parts[0].parse()?, parts[1].parse()?),
-                    (parts[2].parse()?, parts[3].parse()?),
-                )),
-                2 => Ok(Rule::OneOr(parts[0].parse()?, parts[1].parse()?)),
-                _ => Err(aoc::ParseError::Generic),
-            }
-        } else if s.contains(' ') {
-            let parts = aoc::split_ch(s, ' ');
-            match parts.len() {
-                4 => Ok(Rule::Four(
-                    parts[0].parse()?,
-                    parts[1].parse()?,
-                    parts[2].parse()?,
-                    parts[3].parse()?,
-                )),
-
-                2 => Ok(Rule::Two(parts[0].parse()?, parts[1].parse()?)),
-                _ => Err(aoc::ParseError::Generic),
-            }
+        if s.contains('|') || s.contains(' ') {
+            let parts = aoc::split_ch(s, '|');
+            let a = aoc::split_ch(parts[0], ' ')
+                .iter()
+                .map(|x| x.parse().unwrap())
+                .collect();
+            let b = if parts.len() > 1 {
+                aoc::split_ch(parts[1], ' ')
+                    .iter()
+                    .map(|x| x.parse().unwrap())
+                    .collect()
+            } else {
+                vec![]
+            };
+            Ok(Rule::Ref(a, b))
         } else {
             if let Ok(n) = s.parse::<usize>() {
-                Ok(Rule::One(n))
+                Ok(Rule::Ref(vec![n], vec![]))
             } else if s.len() == 3 {
                 if let Some(c) = s.chars().nth(1) {
                     Ok(Rule::Char(c))
@@ -63,35 +51,18 @@ type Answer = usize;
 fn expand_rule(rules: &HashMap<usize, Rule>, ix: usize) -> Vec<String> {
     match rules.get(&ix).unwrap() {
         Rule::Char(c) => vec![c.to_string()],
-        Rule::One(i) => expand_rule(rules, *i),
-        Rule::OneOr(a, b) => {
+        Rule::Ref(a, b) => {
             let mut v = vec!["(".to_string()];
-            v.append(&mut expand_rule(rules, *a));
-            v.push("|".to_string());
-            v.append(&mut expand_rule(rules, *b));
+            for r in a {
+                v.append(&mut expand_rule(rules, *r));
+            }
+            if !b.is_empty() {
+                v.push("|".to_string());
+                for r in b {
+                    v.append(&mut expand_rule(rules, *r));
+                }
+            }
             v.push(")".to_string());
-            v
-        }
-        Rule::Two(a, b) => {
-            let mut v = expand_rule(rules, *a);
-            v.append(&mut expand_rule(rules, *b));
-            v
-        }
-        Rule::TwoOr((a, b), (c, d)) => {
-            let mut v = vec!["(".to_string()];
-            v.append(&mut expand_rule(rules, *a));
-            v.append(&mut expand_rule(rules, *b));
-            v.push("|".to_string());
-            v.append(&mut expand_rule(rules, *c));
-            v.append(&mut expand_rule(rules, *d));
-            v.push(")".to_string());
-            v
-        }
-        Rule::Four(a, b, c, d) => {
-            let mut v = expand_rule(rules, *a);
-            v.append(&mut expand_rule(rules, *b));
-            v.append(&mut expand_rule(rules, *c));
-            v.append(&mut expand_rule(rules, *d));
             v
         }
     }
