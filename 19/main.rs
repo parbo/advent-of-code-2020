@@ -1,8 +1,8 @@
 use aoc::ParseError;
 use regex::Regex;
+use std::collections::HashMap;
 use std::iter::*;
 use std::str::FromStr;
-use std::collections::HashMap;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 enum Rule {
@@ -60,82 +60,52 @@ impl FromStr for Rule {
 type Parsed = (HashMap<usize, Rule>, Vec<String>);
 type Answer = usize;
 
-fn expand_rule(rules: &HashMap<usize, Rule>, ix: usize, patch: bool) -> Vec<String> {
-    if patch {
-        if ix == 8 {
-            let mut v = vec!["(".to_string()];
-            v.push("(".to_string());
-            v.append(&mut expand_rule(rules, 42, true));
-            v.push(")".to_string());
-            v.push("+".to_string());
-            v.push(")".to_string());
-            return v;
-        } else if ix == 11 {
-            let mut v = vec!["(".to_string()];
-            v.push("(".to_string());
-            v.append(&mut expand_rule(rules, 42, true));
-            v.push(")".to_string());
-            v.push("+".to_string());
-            v.push("(".to_string());
-            v.append(&mut expand_rule(rules, 31, true));
-            v.push("+".to_string());
-            v.push(")".to_string());
-            v.push(")".to_string());
-            return v;
-        }
-    }
+fn expand_rule(rules: &HashMap<usize, Rule>, ix: usize) -> Vec<String> {
     match rules.get(&ix).unwrap() {
         Rule::Char(c) => vec![c.to_string()],
-        Rule::One(i) => expand_rule(rules, *i, patch),
+        Rule::One(i) => expand_rule(rules, *i),
         Rule::OneOr(a, b) => {
             let mut v = vec!["(".to_string()];
-            v.append(&mut expand_rule(rules, *a, patch));
+            v.append(&mut expand_rule(rules, *a));
             v.push("|".to_string());
-            v.append(&mut expand_rule(rules, *b, patch));
+            v.append(&mut expand_rule(rules, *b));
             v.push(")".to_string());
             v
         }
         Rule::Two(a, b) => {
-            let mut v = expand_rule(rules, *a, patch);
-            v.append(&mut expand_rule(rules, *b, patch));
+            let mut v = expand_rule(rules, *a);
+            v.append(&mut expand_rule(rules, *b));
             v
         }
         Rule::TwoOr((a, b), (c, d)) => {
             let mut v = vec!["(".to_string()];
-            v.append(&mut expand_rule(rules, *a, patch));
-            v.append(&mut expand_rule(rules, *b, patch));
+            v.append(&mut expand_rule(rules, *a));
+            v.append(&mut expand_rule(rules, *b));
             v.push("|".to_string());
-            v.append(&mut expand_rule(rules, *c, patch));
-            v.append(&mut expand_rule(rules, *d, patch));
+            v.append(&mut expand_rule(rules, *c));
+            v.append(&mut expand_rule(rules, *d));
             v.push(")".to_string());
             v
         }
         Rule::Four(a, b, c, d) => {
-            let mut v = expand_rule(rules, *a, patch);
-            v.append(&mut expand_rule(rules, *b, patch));
-            v.append(&mut expand_rule(rules, *c, patch));
-            v.append(&mut expand_rule(rules, *d, patch));
+            let mut v = expand_rule(rules, *a);
+            v.append(&mut expand_rule(rules, *b));
+            v.append(&mut expand_rule(rules, *c));
+            v.append(&mut expand_rule(rules, *d));
             v
         }
     }
 }
 
-fn solve(input: &Parsed, patch: bool, print: bool) -> Answer {
+fn part1(input: &Parsed) -> Answer {
     let (rules, strings) = input;
     // Expand the rules
-    let expanded = expand_rule(rules, 0, patch).join("");
-    if print {
-	println!("{}", expanded);
-	println!();
-    }
+    let expanded = expand_rule(rules, 0).join("");
     let re = Regex::new(&expanded).unwrap();
     let mut n = 0;
     for s in strings {
         if let Some(mat) = re.find(s) {
             if mat.start() == 0 && mat.end() == s.len() {
-                if print {
-                    println!("{}", s);
-                }
                 n += 1;
             }
         }
@@ -143,12 +113,44 @@ fn solve(input: &Parsed, patch: bool, print: bool) -> Answer {
     n
 }
 
-fn part1(input: &Parsed) -> Answer {
-    solve(input, false, false)
-}
-
 fn part2(input: &Parsed) -> Answer {
-    solve(input, true, true)
+    // 0: 8 11
+    // 8: 42 | 42 8
+    // 11: 42 31 | 42 11 31
+    // so (42 42 42) (42 31) or (42 42 42) (42 42 31 31)
+    // Which means (42){2,}(31)+
+    // But there must be more 42 than 31
+    let (rules, strings) = input;
+    let s42 = expand_rule(rules, 42).join("");
+    let s31 = expand_rule(rules, 31).join("");
+    let r42 = Regex::new(&s42).unwrap();
+    let r31 = Regex::new(&s31).unwrap();
+    let mut n = 0;
+    for s in strings {
+        let mut ix = 0;
+        let mut num42 = 0;
+        while let Some(mat) = r42.find_at(s, ix) {
+            if mat.start() == ix {
+                num42 += 1;
+                ix = mat.end();
+            } else {
+                break;
+            }
+        }
+        let mut num31 = 0;
+        while let Some(mat) = r31.find_at(s, ix) {
+            if mat.start() == ix {
+                num31 += 1;
+                ix = mat.end();
+            } else {
+                break;
+            }
+        }
+        if num42 > num31 && num31 > 0 && ix == s.len() {
+            n += 1;
+        }
+    }
+    n
 }
 
 fn parse(lines: &[String]) -> Parsed {
@@ -161,7 +163,10 @@ fn parse(lines: &[String]) -> Parsed {
         }
         if state == 0 {
             let parts = aoc::split_ch(line, ':');
-            r.insert(parts[0].parse::<usize>().unwrap(), parts[1].parse::<Rule>().unwrap());
+            r.insert(
+                parts[0].parse::<usize>().unwrap(),
+                parts[1].parse::<Rule>().unwrap(),
+            );
         } else {
             s.push(line.clone());
         }
@@ -192,6 +197,6 @@ mod tests {
             .map(|x| x.trim_end_matches('\n').trim_end_matches('\r').to_string())
             .collect();
         let parsed = parse(&example);
-        assert_eq!(solve(&parsed, true, true), 12);
+        assert_eq!(part2(&parsed), 12);
     }
 }

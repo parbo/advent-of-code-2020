@@ -787,20 +787,24 @@ pub fn plot_line(a: Point, b: Point) -> Vec<Point> {
     out
 }
 
+pub fn read_lines_from(filename: &str) -> Vec<String> {
+    let input = File::open(Path::new(filename)).unwrap();
+    let buffered = BufReader::new(input);
+    buffered
+        .lines()
+        .filter_map(Result::ok)
+        .map(|x| x.trim_end_matches('\n').to_string())
+        .collect()
+}
+
 pub fn read_lines() -> (i32, Vec<String>) {
     let args: Vec<String> = env::args().collect();
     let part = args[1].parse::<i32>().unwrap();
     let filename = &args[2];
 
-    let input = File::open(Path::new(filename)).unwrap();
-    let buffered = BufReader::new(input);
     (
         part,
-        buffered
-            .lines()
-            .filter_map(Result::ok)
-            .map(|x| x.trim_end_matches('\n').to_string())
-            .collect(),
+	read_lines_from(filename),
     )
 }
 
