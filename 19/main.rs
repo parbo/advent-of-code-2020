@@ -73,6 +73,19 @@ fn part1(input: &Parsed) -> Answer {
     n
 }
 
+fn find(re: &Regex, s: &str, mut ix: usize) -> (usize, usize) {
+    let mut num = 0;
+    while let Some(mat) = re.find_at(s, ix) {
+        if mat.start() == ix {
+            num += 1;
+            ix = mat.end();
+        } else {
+            break;
+        }
+    }
+    (num, ix)
+}
+
 fn part2(input: &Parsed) -> Answer {
     // 0: 8 11
     // 8: 42 | 42 8
@@ -81,31 +94,12 @@ fn part2(input: &Parsed) -> Answer {
     // Which means (42){2,}(31)+
     // But there must be more 42 than 31
     let (rules, strings) = input;
-    let s42 = expand_rule(rules, 42).join("");
-    let s31 = expand_rule(rules, 31).join("");
-    let r42 = Regex::new(&s42).unwrap();
-    let r31 = Regex::new(&s31).unwrap();
+    let r42 = Regex::new(&expand_rule(rules, 42).join("")).unwrap();
+    let r31 = Regex::new(&expand_rule(rules, 31).join("")).unwrap();
     let mut n = 0;
     for s in strings {
-        let mut ix = 0;
-        let mut num42 = 0;
-        while let Some(mat) = r42.find_at(s, ix) {
-            if mat.start() == ix {
-                num42 += 1;
-                ix = mat.end();
-            } else {
-                break;
-            }
-        }
-        let mut num31 = 0;
-        while let Some(mat) = r31.find_at(s, ix) {
-            if mat.start() == ix {
-                num31 += 1;
-                ix = mat.end();
-            } else {
-                break;
-            }
-        }
+	let (num42, ix) = find(&r42, s, 0);
+	let (num31, ix) = find(&r31, s, ix);
         if num42 > num31 && num31 > 0 && ix == s.len() {
             n += 1;
         }
