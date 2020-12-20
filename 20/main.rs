@@ -102,8 +102,8 @@ fn find_monsters(
         let y = if flip_y == -1 { max_y - iy } else { iy };
         'outer: for ix in min_x..=max_x {
             let x = if flip_x == -1 { max_x - ix } else { ix };
-            // let mut grid = big_grid.clone();
             let mut matches = 0;
+	    let mut monster_coords = vec![];
             for yy in 0..monster.len() {
                 for (xx, mc) in monster[yy].chars().enumerate() {
                     if mc == '#' {
@@ -116,25 +116,25 @@ fn find_monsters(
                             3 => [yyy, max_x - xxx],
                             _ => panic!(),
                         };
-                        if let Some(c) = big_grid.get_value(gc) {
-                            if c == '#' {
-                                matches += 1;
-                            //				grid.set_value(gc, 'O')
-                            } else {
-                                //				grid.set_value(gc, 'X')
-                            }
-                        } else {
-                            // Monster is outside the picture, skip this coord
-                            continue 'outer;
-                        }
+			monster_coords.push(gc);
+		    }
+		}
+	    }
+	    for gc in &monster_coords {
+                if let Some(c) = big_grid.get_value(*gc) {
+                    if c == '#' {
+                        matches += 1;
                     }
+                } else {
+                    // Monster is outside the picture, skip this coord
+                    continue 'outer;
                 }
             }
             // gd.draw(&grid);
             //	    println!("matches: {}", matches);
             if matches == 15 {
                 println!("found monster at: {}, {}", x, y);
-                coords.push([x, y]);
+                coords.append(&mut monster_coords);
             }
         }
     }
@@ -147,7 +147,7 @@ fn part2(input: &Parsed) -> Answer {
     let mut queue = VecDeque::new();
     // Find one corner to use as a starting point
     for (id, b) in &matches {
-        if b.len() == 2 && *id == 1951 {
+        if b.len() == 2 {
             println!("{}, {:?}", id, b);
             queue.push_back(([0, 0], id, 0, false, 0));
         }
@@ -286,17 +286,22 @@ fn part2(input: &Parsed) -> Answer {
         xxx = 0;
     }
     // Find the sea monsters
+    let hashes = big_grid.iter().filter(|(_p, v)| **v == '#').count();
+    let mut monsters = 0;
     for rot in 0..4 {
         for flip_y in &[-1, 1] {
             for flip_x in &[-1, 1] {
                 let m = find_monsters(&big_grid, *flip_x, *flip_y, rot);
+		if m.len() > 0 {
+		    monsters = m.len();
+		}
                 println!("m: {:?}", m);
             }
         }
     }
     let mut gd = aoc::PrintGridDrawer::new(|c| c);
     gd.draw(&big_grid);
-    0
+    (hashes - monsters) as i64
 }
 
 fn parse(lines: &[String]) -> Parsed {
