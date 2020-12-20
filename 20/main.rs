@@ -153,7 +153,7 @@ fn part2(input: &Parsed) -> Answer {
         }
     }
     let mut seen = HashSet::new();
-    while let Some((coord, id, rot, flipped, grid_rot)) = queue.pop_back() {
+    while let Some((coord, id, rot, flipped, d)) = queue.pop_back() {
         if seen.contains(id) {
             continue;
         }
@@ -161,7 +161,7 @@ fn part2(input: &Parsed) -> Answer {
             "coord: {:?}, id: {:?}, rot: {}, flipped: {}",
             coord, id, rot, flipped
         );
-        grid_of_grids.insert(coord, (id, rot, flipped, grid_rot));
+        grid_of_grids.insert(coord, (id, rot, flipped, d));
         seen.insert(id);
         if let Some(m) = matches.get(&id) {
             for (di, idj, dj, flippedj) in m {
@@ -210,7 +210,7 @@ fn part2(input: &Parsed) -> Answer {
                 let new_id = idj;
                 let rot_j = if *flippedj { (4 - rotj) % 4 } else { rotj };
                 let new_rot = (rot_i + rot_j) % 4;
-                queue.push_back((new_coord, new_id, new_rot, flipped ^ *flippedj, rot_i));
+                queue.push_back((new_coord, new_id, new_rot, flipped ^ *flippedj, *dj));
             }
         } else {
         }
@@ -245,20 +245,26 @@ fn part2(input: &Parsed) -> Answer {
     }
     for y in min_y..=max_y {
         for x in min_x..=max_x {
-            if let Some((id, rot, flipped, grid_rot)) = grid_of_grids.get(&[x, y]) {
-                println!("id: {}, rot: {}, grid-rot: {}, flipped: {}", id, rot, grid_rot, flipped);
+            if let Some((id, rot, flipped, d)) = grid_of_grids.get(&[x, y]) {
+                println!("id: {}, rot: {}, d: {}, flipped: {}", id, rot, d, flipped);
                 let g = grids.get(id).unwrap();
                 let ([min_xx, min_yy], [max_xx, max_yy]) = g.extents();
                 for yy in min_yy..=max_yy {
                     for xx in min_xx..=max_xx {
-                        let rot_i = grid_rot;
-                        let gc = match rot_i {
+                        let mut gc = match rot {
                             0 => [xx, yy],
                             1 => [max_yy - yy, xx],
                             2 => [max_xx - xx, max_yy - yy],
                             3 => [yy, max_xx - xx],
                             _ => panic!(),
                         };
+			if *flipped {
+			    if *d == 1 || *d == 3 {
+				gc[0] = max_xx - gc[0];
+			    } else {
+				gc[1] = max_yy - gc[1];
+			    }
+			}
                         let v = g.get_value(gc).unwrap();
                         print!("{}", v);
                         big_grid.insert([xxx, yyy], v);
