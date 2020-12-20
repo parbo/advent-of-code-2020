@@ -39,6 +39,7 @@ pub type Vec4 = self::vecmath::Vector4<i64>;
 pub type FVec4 = self::vecmath::Vector4<f64>;
 pub type Mat4 = self::vecmath::Matrix4<i64>;
 pub type FMat4 = self::vecmath::Matrix4<f64>;
+pub type Mat3 = self::vecmath::Matrix3<i64>;
 
 pub use self::vecmath::mat4_id as mat_identity;
 pub use self::vecmath::mat4_transposed as mat_transpose;
@@ -60,6 +61,11 @@ pub use self::vecmath::vec3_scale as vec_mul;
 pub use self::vecmath::vec3_square_len as vec_square_length;
 pub use self::vecmath::vec3_sub as vec_sub;
 pub use self::vecmath::vec4_add;
+pub use self::vecmath::mat3_id;
+pub use self::vecmath::mat3_inv;
+pub use self::vecmath::row_mat3_mul;
+pub use self::vecmath::row_mat3_transform_vec2;
+pub use self::vecmath::row_mat3_transform_pos2;
 
 pub fn length(v: FVec3) -> f64 {
     vec_square_length(v).sqrt()

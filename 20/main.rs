@@ -103,7 +103,7 @@ fn find_monsters(
         'outer: for ix in min_x..=max_x {
             let x = if flip_x == -1 { max_x - ix } else { ix };
             let mut matches = 0;
-	    let mut monster_coords = vec![];
+            let mut monster_coords = vec![];
             for yy in 0..monster.len() {
                 for (xx, mc) in monster[yy].chars().enumerate() {
                     if mc == '#' {
@@ -116,11 +116,11 @@ fn find_monsters(
                             3 => [yyy, max_x - xxx],
                             _ => panic!(),
                         };
-			monster_coords.push(gc);
-		    }
-		}
-	    }
-	    for gc in &monster_coords {
+                        monster_coords.push(gc);
+                    }
+                }
+            }
+            for gc in &monster_coords {
                 if let Some(c) = big_grid.get_value(*gc) {
                     if c == '#' {
                         matches += 1;
@@ -140,6 +140,17 @@ fn find_monsters(
     }
     coords
 }
+const IDENTITY: aoc::Mat3 = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
+
+const ROT90: aoc::Mat3 = [[0, -1, 0], [1, 0, 0], [0, 0, 1]];
+
+const ROT180: aoc::Mat3 = [[-1, 0, 0], [0, -1, 0], [0, 0, 1]];
+
+const ROT270: aoc::Mat3 = [[0, 1, 0], [-1, 0, 0], [0, 0, 1]];
+
+const FLIPX: aoc::Mat3 = [[1, 0, 0], [0, -1, 0], [0, 0, 1]];
+
+const FLIPY: aoc::Mat3 = [[-1, 0, 0], [0, 1, 0], [0, 0, 1]];
 
 fn part2(input: &Parsed) -> Answer {
     let matches = get_matches(input);
@@ -147,70 +158,87 @@ fn part2(input: &Parsed) -> Answer {
     let mut queue = VecDeque::new();
     // Find one corner to use as a starting point
     for (id, b) in &matches {
-        if b.len() == 2 {
+        if b.len() == 2  {
             println!("{}, {:?}", id, b);
-            queue.push_back(([0, 0], id, 0, false, 0));
+            queue.push_back(([0, 0], id, IDENTITY, false, 0));
         }
     }
     let mut seen = HashSet::new();
-    while let Some((coord, id, rot, flipped, d)) = queue.pop_back() {
+    while let Some((coord, id, transform, flipped, dj)) = queue.pop_back() {
         if seen.contains(id) {
             continue;
         }
         println!(
-            "coord: {:?}, id: {:?}, rot: {}, flipped: {}",
-            coord, id, rot, flipped
+            "coord: {:?}, id: {:?}, transform: {:?}",
+            coord, id, transform
         );
-        grid_of_grids.insert(coord, (id, rot, flipped, d));
+        grid_of_grids.insert(coord, (id, transform, flipped));
         seen.insert(id);
         if let Some(m) = matches.get(&id) {
             for (di, idj, dj, flippedj) in m {
                 let rotj = match di {
                     0 => match dj {
-                        0 => 2,
-                        1 => 3,
-                        2 => 0,
-                        3 => 1,
+                        0 => ROT180,
+                        1 => ROT90,
+                        2 => IDENTITY,
+                        3 => ROT270,
                         _ => panic!(),
                     },
                     1 => match dj {
-                        0 => 1,
-                        1 => 2,
-                        2 => 3,
-                        3 => 0,
+                        0 => ROT270,
+                        1 => ROT180,
+                        2 => ROT90,
+                        3 => IDENTITY,
                         _ => panic!(),
                     },
                     2 => match dj {
-                        0 => 0,
-                        1 => 1,
-                        2 => 2,
-                        3 => 3,
+                        0 => IDENTITY,
+                        1 => ROT270,
+                        2 => ROT180,
+                        3 => ROT90,
                         _ => panic!(),
                     },
                     3 => match dj {
-                        0 => 3,
-                        1 => 0,
-                        2 => 1,
-                        3 => 2,
+                        0 => ROT90,
+                        1 => IDENTITY,
+                        2 => ROT270,
+                        3 => ROT180,
                         _ => panic!(),
                     },
                     _ => panic!(),
                 };
-                let rot_i = if flipped { (4 - rot) % 4 } else { rot };
-                let unrotated_di = (di + (4 - rot_i) % 4) % 4;
-                println!("id: {}, di: {}, flipped: {}, idj: {}, dj: {}, flippedj: {}, rot_i: {}, unrotated_di: {}, rotj: {}", id, di, flipped, idj, dj, flippedj, rot_i, unrotated_di, rotj);
-                let dir = match unrotated_di {
+                let dir = match di {
                     0 => aoc::NORTH,
                     1 => aoc::EAST,
                     2 => aoc::SOUTH,
                     3 => aoc::WEST,
                     _ => panic!(),
                 };
-                let new_coord = aoc::point_add(coord, dir);
+                let new_coord = aoc::point_add(coord, aoc::row_mat3_transform_vec2(transform, dir));
                 let new_id = idj;
-                let rot_j = if *flippedj { (4 - rotj) % 4 } else { rotj };
-                let new_rot = (rot_i + rot_j) % 4;
-                queue.push_back((new_coord, new_id, new_rot, flipped ^ *flippedj, *dj));
+                // let flipi = if flipped {
+                //     if *di == 0 || *di == 2 {
+                //         FLIPY
+                //     } else {
+                //         FLIPX
+                //     }
+                // } else {
+                //     IDENTITY
+                // };
+                let flipj = if *flippedj {
+                    if *dj == 0 || *dj == 2 {
+                        FLIPY
+                    } else {
+                        FLIPX
+                    }
+                } else {
+                    IDENTITY
+                };
+                let new_transform = aoc::row_mat3_mul(
+                    aoc::row_mat3_mul(flipj, rotj),
+                   transform,
+                );
+                queue.push_back((new_coord, new_id, new_transform, flipped ^ *flippedj, *dj));
             }
         } else {
         }
@@ -222,7 +250,7 @@ fn part2(input: &Parsed) -> Answer {
     let max_y = grid_of_grids.iter().map(|(p, _v)| p[1]).max().unwrap();
     for y in min_y..=max_y {
         for x in min_x..=max_x {
-            if let Some((id, _rot, _flipped, _grid_rot)) = grid_of_grids.get(&[x, y]) {
+            if let Some((id, _transform, _flipped)) = grid_of_grids.get(&[x, y]) {
                 print!("{}, ", id);
             } else {
                 print!("    , ");
@@ -236,38 +264,45 @@ fn part2(input: &Parsed) -> Answer {
     let mut yyy = 0;
     let mut grids = HashMap::new();
     for (id, g) in input {
-	let mut gg = vec![];
-	for y in 1..(g.len()-1) {
-	    let ggg = g[y][1..(g[y].len()-1)].to_owned();
-	    gg.push(ggg);
-	}
+        let mut gg = vec![];
+        for y in 1..(g.len() - 1) {
+            let ggg = g[y][1..(g[y].len() - 1)].to_owned();
+            gg.push(ggg);
+        }
         grids.insert(id, gg);
     }
     for y in min_y..=max_y {
         for x in min_x..=max_x {
-            if let Some((id, rot, flipped, d)) = grid_of_grids.get(&[x, y]) {
-                println!("id: {}, rot: {}, d: {}, flipped: {}", id, rot, d, flipped);
+            if let Some((id, transform, d)) = grid_of_grids.get(&[x, y]) {
                 let g = grids.get(id).unwrap();
                 let ([min_xx, min_yy], [max_xx, max_yy]) = g.extents();
+		println!("transform: {:?}", transform);
+		let mut tr = HashMap::new();
                 for yy in min_yy..=max_yy {
                     for xx in min_xx..=max_xx {
-                        let mut gc = match rot {
-                            0 => [xx, yy],
-                            1 => [max_yy - yy, xx],
-                            2 => [max_xx - xx, max_yy - yy],
-                            3 => [yy, max_xx - xx],
-                            _ => panic!(),
-                        };
-			if *flipped {
-			    if *d == 1 || *d == 3 {
-				gc[0] = max_xx - gc[0];
-			    } else {
-				gc[1] = max_yy - gc[1];
-			    }
+                        let xtf = aoc::row_mat3_transform_pos2(*transform, [xx, yy]);
+			tr.insert([xx, yy], xtf);
+		    }
+		}
+		let min_xxx = tr.iter().map(|(_, b)| b[0]).min().unwrap();
+		let min_yyy = tr.iter().map(|(_, b)| b[1]).min().unwrap();
+		let max_xxx = tr.iter().map(|(_, b)| b[0]).max().unwrap();
+		let max_yyy = tr.iter().map(|(_, b)| b[1]).max().unwrap();
+		println!("{}, {}, {}, {}", min_xxx, min_yyy, max_xxx, max_yyy);
+                for yy in min_yy..=max_yy {
+                    for xx in min_xx..=max_xx {
+			let diff_x = max_xx - max_xxx;
+			let diff_y = max_yy - max_yyy;
+			println!("diff: {}, {}", diff_x, diff_y);
+                        let xtf = aoc::row_mat3_transform_pos2(*transform, [xx, yy]);
+			let gc = aoc::point_add(xtf, [diff_x, diff_y]);
+			println!("{:?} -> {:?}", [xx, yy], gc);
+                        if let Some(v) = g.get_value(gc) {
+                            print!("{}", v);
+                            big_grid.insert([xxx, yyy], v);
+			} else {
+			    panic!();
 			}
-                        let v = g.get_value(gc).unwrap();
-                        print!("{}", v);
-                        big_grid.insert([xxx, yyy], v);
                         xxx += 1;
                     }
                     println!();
@@ -292,9 +327,9 @@ fn part2(input: &Parsed) -> Answer {
         for flip_y in &[-1, 1] {
             for flip_x in &[-1, 1] {
                 let m = find_monsters(&big_grid, *flip_x, *flip_y, rot);
-		if m.len() > 0 {
-		    monsters = m.len();
-		}
+                if m.len() > 0 {
+                    monsters = m.len();
+                }
                 println!("m: {:?}", m);
             }
         }
