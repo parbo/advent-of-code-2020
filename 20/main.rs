@@ -89,7 +89,7 @@ fn part2(input: &Parsed) -> Answer {
     let mut queue = VecDeque::new();
     // Find one corner to use as a starting point
     for (id, b) in &matches {
-        if b.len() == 2 && *id == 2971 {
+        if b.len() == 2 {
             println!("{}, {:?}", id, b);
             queue.push_back(([0, 0], id, 0, false));
         }
@@ -99,170 +99,56 @@ fn part2(input: &Parsed) -> Answer {
         if seen.contains(id) {
             continue;
         }
-        println!("{:?}, {:?}, {}, {}", coord, id, rot, flipped);
+        println!("coord: {:?}, id: {:?}, rot: {}, flipped: {}", coord, id, rot, flipped);
         grid_of_grids.insert(coord, id);
         seen.insert(id);
         if let Some(m) = matches.get(&id) {
             for (di, idj, dj, flippedj) in m {
-                println!("{}, {}, {}, {}, {}, {}", id, di, flipped, idj, dj, flippedj);
-                let rotj = if flipped {
-                    if *flippedj {
-                        match di {
-                            0 => match dj {
-                                0 => 2,
-                                1 => 3,
-                                2 => 0,
-                                3 => 1,
-                                _ => panic!(),
-                            },
-                            1 => match dj {
-                                0 => 1,
-                                1 => 2,
-                                2 => 3,
-                                3 => 0,
-                                _ => panic!(),
-                            },
-                            2 => match dj {
-                                0 => 0,
-                                1 => 1,
-                                2 => 2,
-                                3 => 0,
-                                _ => panic!(),
-                            },
-                            3 => match dj {
-                                0 => 3,
-                                1 => 0,
-                                2 => 1,
-                                3 => 2,
-                                _ => panic!(),
-                            },
-                            _ => panic!(),
-                        }
-                    } else {
-                        match di {
-                            0 => match dj {
-                                0 => 0,
-                                1 => 1,
-                                2 => 2,
-                                3 => 3,
-                                _ => panic!(),
-                            },
-                            1 => match dj {
-                                0 => 1,
-                                1 => 2,
-                                2 => 3,
-                                3 => 0,
-                                _ => panic!(),
-                            },
-                            2 => match dj {
-                                0 => 2,
-                                1 => 3,
-                                2 => 0,
-                                3 => 1,
-                                _ => panic!(),
-                            },
-                            3 => match dj {
-                                0 => 3,
-                                1 => 0,
-                                2 => 1,
-                                3 => 2,
-                                _ => panic!(),
-                            },
-                            _ => panic!(),
-                        }
-                    }
-                } else {
-                    if *flippedj {
-                        match di {
-                            0 => match dj {
-                                0 => 0,
-                                1 => 1,
-                                2 => 2,
-                                3 => 3,
-                                _ => panic!(),
-                            },
-                            1 => match dj {
-                                0 => 1,
-                                1 => 2,
-                                2 => 3,
-                                3 => 0,
-                                _ => panic!(),
-                            },
-                            2 => match dj {
-                                0 => 2,
-                                1 => 3,
-                                2 => 0,
-                                3 => 1,
-                                _ => panic!(),
-                            },
-                            3 => match dj {
-                                0 => 3,
-                                1 => 0,
-                                2 => 1,
-                                3 => 2,
-                                _ => panic!(),
-                            },
-                            _ => panic!(),
-                        }
-                    } else {
-                        match di {
-                            0 => match dj {
-                                0 => 2,
-                                1 => 3,
-                                2 => 0,
-                                3 => 1,
-                                _ => panic!(),
-                            },
-                            1 => match dj {
-                                0 => 1,
-                                1 => 2,
-                                2 => 3,
-                                3 => 0,
-                                _ => panic!(),
-                            },
-                            2 => match dj {
-                                0 => 0,
-                                1 => 1,
-                                2 => 2,
-                                3 => 3,
-                                _ => panic!(),
-                            },
-                            3 => match dj {
-                                0 => 3,
-                                1 => 0,
-                                2 => 1,
-                                3 => 2,
-                                _ => panic!(),
-                            },
-                            _ => panic!(),
-                        }
-                    }
-                };
-                let d = if !flipped {
-                    (di + (4 - rot)) % 4
-                } else {
-                    (di + rot) % 4
-                };
-                let dir = if flipped {
-                    match d {
-                        0 => aoc::SOUTH,
-                        1 => aoc::WEST,
-                        2 => aoc::NORTH,
-                        3 => aoc::EAST,
+                let rotj = match di {
+                    0 => match dj {
+                        0 => 2,
+                        1 => 3,
+                        2 => 0,
+                        3 => 1,
                         _ => panic!(),
-                    }
-                } else {
-                    match d {
-                        0 => aoc::NORTH,
-                        1 => aoc::EAST,
-                        2 => aoc::SOUTH,
-                        3 => aoc::WEST,
+                    },
+                    1 => match dj {
+                        0 => 1,
+                        1 => 2,
+                        2 => 3,
+                        3 => 0,
                         _ => panic!(),
-                    }
+                    },
+                    2 => match dj {
+                        0 => 0,
+                        1 => 1,
+                        2 => 2,
+                        3 => 3,
+                        _ => panic!(),
+                    },
+                    3 => match dj {
+                        0 => 3,
+                        1 => 0,
+                        2 => 1,
+                        3 => 2,
+                        _ => panic!(),
+                    },
+                    _ => panic!(),
+                };
+                let rot_i = if flipped { (4 - rot) % 4 } else { rot };
+                let unrotated_di = (di + (4 - rot_i) % 4) % 4;
+                println!("id: {}, di: {}, flipped: {}, idj: {}, dj: {}, flippedj: {}, rot_i: {}, unrotated_di: {}, rotj: {}", id, di, flipped, idj, dj, flippedj, rot_i, unrotated_di, rotj);
+                let dir = match unrotated_di {
+                    0 => aoc::NORTH,
+                    1 => aoc::EAST,
+                    2 => aoc::SOUTH,
+                    3 => aoc::WEST,
+                    _ => panic!(),
                 };
                 let new_coord = aoc::point_add(coord, dir);
                 let new_id = idj;
-                let new_rot = (rot + rotj) % 4;
+                let rot_j = if *flippedj { (4 - rotj) % 4 } else { rotj };
+                let new_rot = (rot_i + rot_j) % 4;
                 queue.push_back((new_coord, new_id, new_rot, flipped ^ *flippedj));
             }
         } else {
