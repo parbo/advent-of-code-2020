@@ -158,14 +158,14 @@ fn part2(input: &Parsed) -> Answer {
     let mut queue = VecDeque::new();
     // Find one corner to use as a starting point
     for (id, b) in &matches {
-        if b.len() == 2 {
+        if b.len() == 2 /*&& *id == 1951*/ {
             println!("{}, {:?}", id, b);
-            queue.push_back(([0, 0], id, IDENTITY, false, 0));
+            queue.push_back(([0, 0], *id, IDENTITY));
         }
     }
     let mut seen = HashSet::new();
-    while let Some((coord, id, transform, flipped, dj)) = queue.pop_back() {
-        if seen.contains(id) {
+    while let Some((coord, id, transform)) = queue.pop_back() {
+        if seen.contains(&id) {
             continue;
         }
         println!(
@@ -174,9 +174,14 @@ fn part2(input: &Parsed) -> Answer {
         );
         grid_of_grids.insert(coord, (id, transform));
         seen.insert(id);
-        if let Some(m) = matches.get(&id) {
+        if let Some(mm) = matches.get(&id) {
+            let mut m = mm.clone();
+            m.sort_by(|a, b| a.0.cmp(&b.0));
             for (di, idj, dj, flippedj) in m {
-		println!("di: {}, idj: {}, dj: {}, flippedj: {}", di, idj, dj, flippedj);
+                println!(
+                    "di: {}, idj: {}, dj: {}, flippedj: {}",
+                    di, idj, dj, flippedj
+                );
                 let rotj = match di {
                     0 => match dj {
                         0 => ROT180CW,
@@ -215,8 +220,12 @@ fn part2(input: &Parsed) -> Answer {
                     3 => aoc::WEST,
                     _ => panic!(),
                 };
-                let new_coord = aoc::point_add(coord, aoc::row_mat3_transform_vec2(transform, dir));
-		println!("dir: {:?}, new coord. {:?}", dir, new_coord);
+                let new_dir = aoc::row_mat3_transform_vec2(transform, dir);
+                let new_coord = aoc::point_add(coord, new_dir);
+                println!(
+                    "dir: {:?}, new dir: {:?}, new coord. {:?}",
+                    dir, new_dir, new_coord
+                );
                 let new_id = idj;
                 // let flipi = if flipped {
                 //     if *di == 0 || *di == 2 {
@@ -227,20 +236,24 @@ fn part2(input: &Parsed) -> Answer {
                 // } else {
                 //     IDENTITY
                 // };
-                let flipj = if *flippedj {
-                    if *dj == 0 || *dj == 2 {
-                        FLIPY
-                    } else {
+                let dirj = match dj {
+                    0 => aoc::NORTH,
+                    1 => aoc::EAST,
+                    2 => aoc::SOUTH,
+                    3 => aoc::WEST,
+                    _ => panic!(),
+                };
+                let flipj = if flippedj {
+                    if dj == 0 || dj == 2 {
                         FLIPX
+                    } else {
+                        FLIPY
                     }
                 } else {
                     IDENTITY
                 };
-                let new_transform = aoc::row_mat3_mul(
-                    aoc::row_mat3_mul(flipj, rotj),
-                   transform,
-                );
-                queue.push_back((new_coord, new_id, new_transform, flipped ^ *flippedj, *dj));
+                let new_transform = aoc::row_mat3_mul(transform, aoc::row_mat3_mul(flipj, rotj));
+                queue.push_back((new_coord, new_id, new_transform));
             }
         } else {
         }
@@ -276,54 +289,54 @@ fn part2(input: &Parsed) -> Answer {
     for y in min_y..=max_y {
         for x in min_x..=max_x {
             if let Some((id, transform)) = grid_of_grids.get(&[x, y]) {
-		println!("Tile: {}, {:?}", id, transform);
+                println!("Tile: {}, {:?}", id, transform);
                 let g = grids.get(id).unwrap();
                 let ([min_xx, min_yy], [max_xx, max_yy]) = g.extents();
-		let mut tr = HashMap::new();
+                let mut tr = HashMap::new();
                 for yy in min_yy..=max_yy {
                     for xx in min_xx..=max_xx {
                         let xtf = aoc::row_mat3_transform_pos2(*transform, [xx, yy]);
-			tr.insert([xx, yy], xtf);
-		    }
-		}
-		let min_xxx = tr.iter().map(|(_, b)| b[0]).min().unwrap();
-		let min_yyy = tr.iter().map(|(_, b)| b[1]).min().unwrap();
-		let max_xxx = tr.iter().map(|(_, b)| b[0]).max().unwrap();
-		let max_yyy = tr.iter().map(|(_, b)| b[1]).max().unwrap();
-		//		println!("{}, {}, {}, {}", min_xxx, min_yyy, max_xxx, max_yyy);
-		if max_xx != max_yy {
-		    panic!();
-		}
-		// Transform the grid
-		let mut trg = vec![vec![' ';g.len()]; g[0].len()];
+                        tr.insert([xx, yy], xtf);
+                    }
+                }
+                let min_xxx = tr.iter().map(|(_, b)| b[0]).min().unwrap();
+                let min_yyy = tr.iter().map(|(_, b)| b[1]).min().unwrap();
+                let max_xxx = tr.iter().map(|(_, b)| b[0]).max().unwrap();
+                let max_yyy = tr.iter().map(|(_, b)| b[1]).max().unwrap();
+                //		println!("{}, {}, {}, {}", min_xxx, min_yyy, max_xxx, max_yyy);
+                if max_xx != max_yy {
+                    panic!();
+                }
+                // Transform the grid
+                let mut trg = vec![vec![' '; g.len()]; g[0].len()];
                 for yy in min_yy..=max_yy {
                     for xx in min_xx..=max_xx {
-			let diff_x = max_xx - max_xxx;
-			let diff_y = max_yy - max_yyy;
-//			println!("diff: {}, {}", diff_x, diff_y);
+                        let diff_x = max_xx - max_xxx;
+                        let diff_y = max_yy - max_yyy;
+                        //			println!("diff: {}, {}", diff_x, diff_y);
                         // let xtf = aoc::row_mat3_transform_pos2(*transform, [xx, yy]);
-			// let gc = aoc::point_add(xtf, [diff_x, diff_y]);
+                        // let gc = aoc::point_add(xtf, [diff_x, diff_y]);
                         let xtf = aoc::row_mat3_transform_pos2(*transform, [xx, yy]);
-			let gc = aoc::point_add(xtf, [diff_x, diff_y]);
-//			println!("{:?} -> {:?} -> {:?}", [xx, yy], xtf, gc);
+                        let gc = aoc::point_add(xtf, [diff_x, diff_y]);
+                        //			println!("{:?} -> {:?} -> {:?}", [xx, yy], xtf, gc);
                         if let Some(v) = g.get_value([xx, yy]) {
                             print!("{}", v);
-			    trg.set_value(gc, v);
-			}
-		    }
+                            trg.set_value(gc, v);
+                        }
+                    }
                     println!();
-		}
+                }
                 println!();
-		// Copy teh transformed grid
+                // Copy teh transformed grid
                 for yy in min_yy..=max_yy {
                     for xx in min_xx..=max_xx {
-//			println!("{}, {}, {}, {}", max_xx, max_yy, xx, yy); 
+                        //			println!("{}, {}, {}, {}", max_xx, max_yy, xx, yy);
                         if let Some(v) = trg.get_value([xx, yy]) {
                             print!("{}", v);
                             big_grid.insert([xxx, yyy], v);
-			} else {
-			    panic!();
-			}
+                        } else {
+                            panic!();
+                        }
                         xxx += 1;
                     }
                     println!();
