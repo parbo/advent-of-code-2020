@@ -83,24 +83,85 @@ fn part1(input: &Parsed) -> Answer {
     ans
 }
 
+fn find_monsters(
+    big_grid: &HashMap<aoc::Point, char>,
+    flip_x: i64,
+    flip_y: i64,
+    rotate: i64,
+) -> Vec<aoc::Point> {
+    println!("flip_x: {}, flip_y: {}, rotate: {}", flip_x, flip_y, rotate);
+    let monster = vec![
+        "                  # ",
+        "#    ##    ##    ###",
+        " #  #  #  #  #  #   ",
+    ];
+    let mut coords = vec![];
+    let ([min_x, min_y], [max_x, max_y]) = big_grid.extents();
+    let mut gd = aoc::PrintGridDrawer::new(|c| c);
+    for iy in min_y..=max_y {
+        let y = if flip_y == -1 { max_y - iy } else { iy };
+        'outer: for ix in min_x..=max_x {
+            let x = if flip_x == -1 { max_x - ix } else { ix };
+            // let mut grid = big_grid.clone();
+            let mut matches = 0;
+            for yy in 0..monster.len() {
+                for (xx, mc) in monster[yy].chars().enumerate() {
+                    if mc == '#' {
+                        let xxx = x + xx as i64;
+                        let yyy = y + yy as i64;
+                        let gc = match rotate {
+                            0 => [xxx, yyy],
+                            1 => [max_y - yyy, xxx],
+                            2 => [max_x - xxx, max_y - yyy],
+                            3 => [yyy, max_x - xxx],
+                            _ => panic!(),
+                        };
+                        if let Some(c) = big_grid.get_value(gc) {
+                            if c == '#' {
+                                matches += 1;
+                            //				grid.set_value(gc, 'O')
+                            } else {
+                                //				grid.set_value(gc, 'X')
+                            }
+                        } else {
+                            // Monster is outside the picture, skip this coord
+                            continue 'outer;
+                        }
+                    }
+                }
+            }
+            // gd.draw(&grid);
+            //	    println!("matches: {}", matches);
+            if matches == 15 {
+                println!("found monster at: {}, {}", x, y);
+                coords.push([x, y]);
+            }
+        }
+    }
+    coords
+}
+
 fn part2(input: &Parsed) -> Answer {
     let matches = get_matches(input);
     let mut grid_of_grids = HashMap::new();
     let mut queue = VecDeque::new();
     // Find one corner to use as a starting point
     for (id, b) in &matches {
-        if b.len() == 2 {
+        if b.len() == 2 && *id == 1951 {
             println!("{}, {:?}", id, b);
-            queue.push_back(([0, 0], id, 0, false));
+            queue.push_back(([0, 0], id, 0, false, 0));
         }
     }
     let mut seen = HashSet::new();
-    while let Some((coord, id, rot, flipped)) = queue.pop_back() {
+    while let Some((coord, id, rot, flipped, grid_rot)) = queue.pop_back() {
         if seen.contains(id) {
             continue;
         }
-        println!("coord: {:?}, id: {:?}, rot: {}, flipped: {}", coord, id, rot, flipped);
-        grid_of_grids.insert(coord, id);
+        println!(
+            "coord: {:?}, id: {:?}, rot: {}, flipped: {}",
+            coord, id, rot, flipped
+        );
+        grid_of_grids.insert(coord, (id, rot, flipped, grid_rot));
         seen.insert(id);
         if let Some(m) = matches.get(&id) {
             for (di, idj, dj, flippedj) in m {
@@ -149,7 +210,7 @@ fn part2(input: &Parsed) -> Answer {
                 let new_id = idj;
                 let rot_j = if *flippedj { (4 - rotj) % 4 } else { rotj };
                 let new_rot = (rot_i + rot_j) % 4;
-                queue.push_back((new_coord, new_id, new_rot, flipped ^ *flippedj));
+                queue.push_back((new_coord, new_id, new_rot, flipped ^ *flippedj, rot_i));
             }
         } else {
         }
@@ -161,7 +222,7 @@ fn part2(input: &Parsed) -> Answer {
     let max_y = grid_of_grids.iter().map(|(p, _v)| p[1]).max().unwrap();
     for y in min_y..=max_y {
         for x in min_x..=max_x {
-            if let Some(id) = grid_of_grids.get(&[x, y]) {
+            if let Some((id, _rot, _flipped, _grid_rot)) = grid_of_grids.get(&[x, y]) {
                 print!("{}, ", id);
             } else {
                 print!("    , ");
@@ -170,38 +231,65 @@ fn part2(input: &Parsed) -> Answer {
         println!();
     }
 
-    // let mut big_grid = HashMap::new();
-    // let mut xxx = 0;
-    // let mut yyy = 0;
-    // let mut grids = HashMap::new();
-    // for (id, g) in input {
-    //     grids.insert(id, g);
-    // }
-    // for _y in min_y..=max_y {
-    //     for x in min_x..=max_x {
-    //         if let Some(id) = grid_of_grids.get(&[min_x, min_y]) {
-    //             let g = grids.get(id).unwrap();
-    //             let ([min_xx, min_yy], [max_xx, max_yy]) = g.extents();
-    //             for yy in min_yy..=max_yy {
-    //                 for xx in min_xx..=max_xx {
-    //                     let v = g.get_value([xx, yy]).unwrap();
-    //                     big_grid.insert([xxx, yyy], v);
-    //                     xxx += 1;
-    //                 }
-    //                 xxx -= max_xx - min_xx + 1;
-    //                 yyy += 1;
-    //             }
-    //             xxx += max_xx - min_xx + 1;
-    //             if x != max_x {
-    //                 yyy -= max_yy - min_yy + 1;
-    //             }
-    //         } else {
-    // 		xxx += 10;  // jaja
-    // 	    }
-    //     }
-    // }
-    // let mut gd = aoc::PrintGridDrawer::new(|c| c);
-    // gd.draw(&big_grid);
+    let mut big_grid = HashMap::new();
+    let mut xxx = 0;
+    let mut yyy = 0;
+    let mut grids = HashMap::new();
+    for (id, g) in input {
+	let mut gg = vec![];
+	for y in 1..(g.len()-1) {
+	    let ggg = g[y][1..(g[y].len()-1)].to_owned();
+	    gg.push(ggg);
+	}
+        grids.insert(id, gg);
+    }
+    for y in min_y..=max_y {
+        for x in min_x..=max_x {
+            if let Some((id, rot, flipped, grid_rot)) = grid_of_grids.get(&[x, y]) {
+                println!("id: {}, rot: {}, grid-rot: {}, flipped: {}", id, rot, grid_rot, flipped);
+                let g = grids.get(id).unwrap();
+                let ([min_xx, min_yy], [max_xx, max_yy]) = g.extents();
+                for yy in min_yy..=max_yy {
+                    for xx in min_xx..=max_xx {
+                        let rot_i = grid_rot;
+                        let gc = match rot_i {
+                            0 => [xx, yy],
+                            1 => [max_yy - yy, xx],
+                            2 => [max_xx - xx, max_yy - yy],
+                            3 => [yy, max_xx - xx],
+                            _ => panic!(),
+                        };
+                        let v = g.get_value(gc).unwrap();
+                        print!("{}", v);
+                        big_grid.insert([xxx, yyy], v);
+                        xxx += 1;
+                    }
+                    println!();
+                    xxx -= max_xx - min_xx + 1;
+                    yyy += 1;
+                }
+                println!();
+                xxx += max_xx - min_xx + 1;
+                if x != max_x {
+                    yyy -= max_yy - min_yy + 1;
+                }
+            } else {
+                panic!();
+            }
+        }
+        xxx = 0;
+    }
+    // Find the sea monsters
+    for rot in 0..4 {
+        for flip_y in &[-1, 1] {
+            for flip_x in &[-1, 1] {
+                let m = find_monsters(&big_grid, *flip_x, *flip_y, rot);
+                println!("m: {:?}", m);
+            }
+        }
+    }
+    let mut gd = aoc::PrintGridDrawer::new(|c| c);
+    gd.draw(&big_grid);
     0
 }
 
