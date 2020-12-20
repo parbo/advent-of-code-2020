@@ -172,7 +172,7 @@ fn part2(input: &Parsed) -> Answer {
             "coord: {:?}, id: {:?}, transform: {:?}",
             coord, id, transform
         );
-        grid_of_grids.insert(coord, (id, transform, flipped));
+        grid_of_grids.insert(coord, (id, transform));
         seen.insert(id);
         if let Some(m) = matches.get(&id) {
             for (di, idj, dj, flippedj) in m {
@@ -250,7 +250,7 @@ fn part2(input: &Parsed) -> Answer {
     let max_y = grid_of_grids.iter().map(|(p, _v)| p[1]).max().unwrap();
     for y in min_y..=max_y {
         for x in min_x..=max_x {
-            if let Some((id, _transform, _flipped)) = grid_of_grids.get(&[x, y]) {
+            if let Some((id, _transform)) = grid_of_grids.get(&[x, y]) {
                 print!("{}, ", id);
             } else {
                 print!("    , ");
@@ -273,7 +273,7 @@ fn part2(input: &Parsed) -> Answer {
     }
     for y in min_y..=max_y {
         for x in min_x..=max_x {
-            if let Some((id, transform, d)) = grid_of_grids.get(&[x, y]) {
+            if let Some((id, transform)) = grid_of_grids.get(&[x, y]) {
                 let g = grids.get(id).unwrap();
                 let ([min_xx, min_yy], [max_xx, max_yy]) = g.extents();
 		println!("transform: {:?}", transform);
