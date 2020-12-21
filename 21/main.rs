@@ -148,9 +148,10 @@ mod tests {
             "sbzzf".to_string(),
             "trh".to_string(),
         ];
-        let na = non_allergenic(&parsed);
+        let (na, _) = allergenic(&parsed);
         let na_set: HashSet<String> = na.into_iter().collect();
         let expected_set: HashSet<String> = expected.into_iter().collect();
         assert_eq!(na_set, expected_set);
+	assert_eq!(part2(&parsed), "mxmxvkd,sqjhc,fvjkl");
     }
 }
