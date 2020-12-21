@@ -133,7 +133,7 @@ fn blit() {
     g.push("..........".into());
     g.push("..........".into());
     g.push("..........".into());
-    g.push("+.......+".into());
+    g.push("+....... +".into());
     let mut g2: Vec<String> = vec![];
     g2.push("...#..#.".into());
     g2.push(".#######".into());

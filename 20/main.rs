@@ -82,57 +82,64 @@ fn part1(input: &Parsed) -> Answer {
     ans
 }
 
-fn find_monsters(grid: &HashMap<aoc::Point, char>, flip: i64, rotate: i64) -> Vec<aoc::Point> {
+fn find_monsters(grid: &HashMap<aoc::Point, char>) -> Vec<aoc::Point> {
     let monster = vec![
         "                  # ",
         "#    ##    ##    ###",
         " #  #  #  #  #  #   ",
     ];
-    let mut coords = vec![];
-    let mut big_grid = grid.clone();
-    match flip {
-        0 => {}
-        1 => big_grid.flip_horizontal(),
-        2 => big_grid.flip_vertical(),
-        _ => panic!(),
-    }
-    match rotate {
-        0 => {}
-        1 => big_grid.rotate_90_cw(),
-        2 => big_grid.rotate_180_cw(),
-        3 => big_grid.rotate_270_cw(),
-        _ => panic!(),
-    }
-    let ([min_x, min_y], [max_x, max_y]) = big_grid.extents();
-    for y in min_y..=max_y {
-        'outer: for x in min_x..=max_x {
-            let mut matches = 0;
-            let mut monster_coords = vec![];
-            for yy in 0..monster.len() {
-                for (xx, mc) in monster[yy].chars().enumerate() {
-                    if mc == '#' {
-                        let xxx = x + xx as i64;
-                        let yyy = y + yy as i64;
-                        monster_coords.push([xxx, yyy]);
+    for rotate in 0..4 {
+        for flip in 0..3 {
+            let mut coords = vec![];
+            let mut big_grid = grid.clone();
+            match flip {
+                0 => {}
+                1 => big_grid.flip_horizontal(),
+                2 => big_grid.flip_vertical(),
+                _ => panic!(),
+            }
+            match rotate {
+                0 => {}
+                1 => big_grid.rotate_90_cw(),
+                2 => big_grid.rotate_180_cw(),
+                3 => big_grid.rotate_270_cw(),
+                _ => panic!(),
+            }
+            let ([min_x, min_y], [max_x, max_y]) = big_grid.extents();
+            for y in min_y..=max_y {
+                'outer: for x in min_x..=max_x {
+                    let mut matches = 0;
+                    let mut monster_coords = vec![];
+                    for yy in 0..monster.len() {
+                        for (xx, mc) in monster[yy].chars().enumerate() {
+                            if mc == '#' {
+                                let xxx = x + xx as i64;
+                                let yyy = y + yy as i64;
+                                monster_coords.push([xxx, yyy]);
+                            }
+                        }
+                    }
+                    for gc in &monster_coords {
+                        if let Some(c) = big_grid.get_value(*gc) {
+                            if c == '#' {
+                                matches += 1;
+                            }
+                        } else {
+                            // Monster is outside the picture, skip this coord
+                            continue 'outer;
+                        }
+                    }
+                    if matches == 15 {
+                        coords.append(&mut monster_coords);
                     }
                 }
             }
-            for gc in &monster_coords {
-                if let Some(c) = big_grid.get_value(*gc) {
-                    if c == '#' {
-                        matches += 1;
-                    }
-                } else {
-                    // Monster is outside the picture, skip this coord
-                    continue 'outer;
-                }
-            }
-            if matches == 15 {
-                coords.append(&mut monster_coords);
+            if coords.len() > 0 {
+		return coords;
             }
         }
     }
-    coords
+    vec![]
 }
 
 fn place(
@@ -263,19 +270,11 @@ fn part2(input: &Parsed) -> Answer {
     }
     // Find the sea monsters
     let hashes = big_grid.iter().filter(|(_p, v)| **v == '#').count();
-    let mut monsters = 0;
-    'done: for rot in 0..4 {
-        for flip in 0..3 {
-            let m = find_monsters(&big_grid, flip, rot);
-            if m.len() > 0 {
-                monsters = m.len();
-                // Fill in the monsters
-                for mc in m {
-                    big_grid.set_value(mc, 'O');
-                }
-                break 'done;
-            }
-        }
+    let m = find_monsters(&big_grid);
+    let monsters = m.len();
+    // Fill in the monsters
+    for mc in m {
+        big_grid.set_value(mc, 'O');
     }
     let mut gd = aoc::PrintGridDrawer::new(|c| c);
     gd.draw(&big_grid);
