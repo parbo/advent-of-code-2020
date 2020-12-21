@@ -235,7 +235,7 @@ fn part2(input: &Parsed) -> Answer {
     }
     let matches = get_matches(input);
     // Corners have only two neighbours
-    let corners :Vec<_> = matches
+    let corners: Vec<_> = matches
         .iter()
         .filter_map(|(id, b)| if b.len() == 2 { Some(*id) } else { None })
         .collect();
