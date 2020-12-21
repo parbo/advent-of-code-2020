@@ -82,7 +82,9 @@ fn part1(input: &Parsed) -> Answer {
     ans
 }
 
-fn find_monsters(grid: &HashMap<aoc::Point, char>) -> Vec<aoc::Point> {
+fn find_monsters(grid: &HashMap<aoc::Point, char>,
+		 gd: &mut dyn aoc::GridDrawer<HashMap<aoc::Point, char>, char>,) -> Vec<aoc::Point> {
+    println!("find monsters!");
     let monster = vec![
         "                  # ",
         "#    ##    ##    ###",
@@ -130,6 +132,16 @@ fn find_monsters(grid: &HashMap<aoc::Point, char>) -> Vec<aoc::Point> {
                         }
                     }
                     if matches == 15 {
+			if !big_grid.is_empty() {
+			    let mut bg = big_grid.clone();
+			    // make it big, gaah, shouldn't hardcode
+			    bg.set_value([0, 0], '.');
+			    bg.set_value([95, 95], '.');
+			    for m in &monster_coords {
+				bg.set_value(*m, 'O');
+			    }
+			    gd.draw(&bg);
+			}
                         coords.append(&mut monster_coords);
                     }
                 }
@@ -142,17 +154,28 @@ fn find_monsters(grid: &HashMap<aoc::Point, char>) -> Vec<aoc::Point> {
     vec![]
 }
 
+static WT: (u8, u8, u8) = (0, 0, 0);
+static BK: (u8, u8, u8) = (255, 255, 255);
+static RD: (u8, u8, u8) = (255, 0, 0);
+
 fn place(
     grids: &HashMap<i64, Vec<Vec<char>>>,
     corners: &[i64],
     coord: aoc::Point,
     placed: HashSet<i64>,
     grid_of_grids: HashMap<aoc::Point, (i64, Vec<Vec<char>>)>,
+    gd: &mut dyn aoc::GridDrawer<HashMap<aoc::Point, char>, char>,
 ) -> HashMap<aoc::Point, (i64, Vec<Vec<char>>)> {
+    let expected = (grids.len() as f64).sqrt() as i64;
+    let mut big_grid = stitch_grids(&grid_of_grids);
+    if !big_grid.is_empty() {
+	big_grid.set_value([0, 0], '.');
+	big_grid.set_value([95, 95], '.');
+	gd.draw(&big_grid);
+    }
     if grid_of_grids.len() == grids.len() {
         return grid_of_grids;
     }
-    let expected = (grids.len() as f64).sqrt() as i64;
     let mut candidates = vec![];
     for (id, g) in grids {
         if placed.contains(&id) {
@@ -226,7 +249,7 @@ fn place(
             } else {
                 [0, coord[1] + 1]
             };
-            let next_gog = place(grids, corners, new_coord, p, gog);
+            let next_gog = place(grids, corners, new_coord, p, gog, gd);
             if !next_gog.is_empty() {
                 return next_gog;
             }
@@ -251,9 +274,10 @@ fn stitch_grids(
         let gw = (g[0].len() - 2) as i64;
         for y in min_y..=max_y {
             for x in min_x..=max_x {
-                let (_id, g) = grid_of_grids.get(&[x, y]).unwrap();
-                // Cut out the borders
-                big_grid.blit_rect([xx, yy], g, [1, 1], [gw, gh]);
+                if let Some((_id, g)) = grid_of_grids.get(&[x, y]) {
+                    // Cut out the borders
+                    big_grid.blit_rect([xx, yy], g, [1, 1], [gw, gh]);
+		}
                 xx += gw;
             }
             xx = 0;
@@ -274,17 +298,55 @@ fn part2(input: &Parsed) -> Answer {
         .iter()
         .filter_map(|(id, b)| if b.len() == 2 { Some(*id) } else { None })
         .collect();
-    let grid_of_grids = place(&grids, &corners, [0, 0], HashSet::new(), HashMap::new());
+    let mut gd = aoc::BitmapGridDrawer::new(
+            (6, 6),
+            |x| match x {
+                '#' => vec![
+                    BK, WT, BK, BK, WT, BK, WT, WT, WT, WT, WT, WT, BK, WT, BK, BK, WT, BK, BK, WT,
+                    BK, BK, WT, BK, WT, WT, WT, WT, WT, WT, BK, WT, BK, BK, WT, BK,
+                ],
+                'O' => vec![
+                    BK, RD, RD, RD, RD, BK,
+		    RD, RD, RD, RD, RD, RD,
+		    RD, RD, RD, RD, RD, RD,
+		    RD, RD, RD, RD, RD, RD,
+		    RD, RD, RD, RD, RD, RD,
+                    BK, RD, RD, RD, RD, BK,
+                ],
+                _ => vec![
+                    BK, BK, BK, BK, BK, BK, BK, BK, BK, BK, BK, BK, BK, BK, BK, BK, BK, BK, BK, BK,
+                    BK, BK, BK, BK, BK, BK, BK, BK, BK, BK, BK, BK, BK, BK, BK, BK,
+                ],
+            },
+            "ppm/day20/part2",
+        );
+    let grid_of_grids = place(
+        &grids,
+        &corners,
+        [0, 0],
+        HashSet::new(),
+        HashMap::new(),
+        &mut gd,
+    );
     // Stitch the grids together
     let mut big_grid = stitch_grids(&grid_of_grids);
     // Find the sea monsters
     let hashes = big_grid.iter().filter(|(_p, v)| **v == '#').count();
-    let m = find_monsters(&big_grid);
+    let m = find_monsters(&big_grid, &mut gd);
     let monsters = m.len();
     // Fill in the monsters
     for mc in m {
         big_grid.set_value(mc, 'O');
     }
+    let mut bg = big_grid.clone();
+    // make it big, gaah, shouldn't hardcode
+    bg.set_value([0, 0], '.');
+    bg.set_value([95, 95], '.');
+    // make the final image show longer
+    for _ in 0..30 {
+	gd.draw(&bg);
+    }
+    // Also draw to console
     let mut gd = aoc::PrintGridDrawer::new(|c| c);
     gd.draw(&big_grid);
     (hashes - monsters) as i64
@@ -303,22 +365,7 @@ fn parse(lines: &[String]) -> Parsed {
 
 fn main() {
     let (part, lines) = aoc::read_lines();
-    if part == 3 {
-        let inp: Vec<char> = lines[0].chars().collect();
-        let grid: Vec<Vec<char>> = inp.chunks(96).map(|c| c.to_vec()).collect();
-        let mut sparse_grid = HashMap::new();
-        for p in grid.points() {
-            sparse_grid.insert(p, grid.get_value(p).unwrap());
-        }
-        let mut gd = aoc::PrintGridDrawer::new(|c| c);
-        let m = find_monsters(&sparse_grid);
-        // Fill in the monsters
-        for mc in &m {
-            sparse_grid.set_value(*mc, 'O');
-        }
-        gd.draw(&sparse_grid);
-        println!("monsters: {}", m.len() / 15);
-    } else if part == 1 {
+    if part == 1 {
         let parsed = parse(&lines);
         let result = part1(&parsed);
         println!("{}", result);
@@ -326,5 +373,5 @@ fn main() {
         let parsed = parse(&lines);
         let result = part2(&parsed);
         println!("{}", result);
-    };
+    }
 }
