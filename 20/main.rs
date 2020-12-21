@@ -1,6 +1,6 @@
 use aoc::Grid;
 use aoc::GridDrawer;
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::collections::{HashMap, HashSet};
 use std::iter::*;
 
 type Parsed = Vec<(i64, Vec<Vec<char>>)>;
@@ -97,7 +97,6 @@ fn find_monsters(
     ];
     let mut coords = vec![];
     let ([min_x, min_y], [max_x, max_y]) = big_grid.extents();
-    let mut gd = aoc::PrintGridDrawer::new(|c| c);
     for iy in min_y..=max_y {
         let y = if flip_y == -1 { max_y - iy } else { iy };
         'outer: for ix in min_x..=max_x {
@@ -140,123 +139,96 @@ fn find_monsters(
     }
     coords
 }
-const IDENTITY: aoc::Mat3 = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
-
-const ROT90CW: aoc::Mat3 = [[0, -1, 0], [1, 0, 0], [0, 0, 1]];
-
-const ROT180CW: aoc::Mat3 = [[-1, 0, 0], [0, -1, 0], [0, 0, 1]];
-
-const ROT270CW: aoc::Mat3 = [[0, 1, 0], [-1, 0, 0], [0, 0, 1]];
-
-const FLIPX: aoc::Mat3 = [[1, 0, 0], [0, -1, 0], [0, 0, 1]];
-
-const FLIPY: aoc::Mat3 = [[-1, 0, 0], [0, 1, 0], [0, 0, 1]];
 
 fn part2(input: &Parsed) -> Answer {
     let matches = get_matches(input);
     let mut grid_of_grids = HashMap::new();
-    let mut queue = VecDeque::new();
+    let mut grids = HashMap::new();
+    let mut placed = HashSet::new();
+    for (id, g) in input {
+        grids.insert(id, g.clone());
+    }
     // Find one corner to use as a starting point
+    let mut coord = [0, 0];
     for (id, b) in &matches {
-        if b.len() == 2 /*&& *id == 1951*/ {
-            println!("{}, {:?}", id, b);
-            queue.push_back(([0, 0], *id, IDENTITY));
+        if b.len() == 2 {
+	    println!("placing {} at {:?}", id, coord);
+	    grid_of_grids.insert(coord, (id, grids.get(&id).unwrap().clone()));
+	    placed.insert(*id);
+	    break;
         }
     }
-    let mut seen = HashSet::new();
-    while let Some((coord, id, transform)) = queue.pop_back() {
-        if seen.contains(&id) {
-            continue;
-        }
-        println!(
-            "coord: {:?}, id: {:?}, transform: {:?}",
-            coord, id, transform
-        );
-        grid_of_grids.insert(coord, (id, transform));
-        seen.insert(id);
-        if let Some(mm) = matches.get(&id) {
-            let mut m = mm.clone();
-            m.sort_by(|a, b| a.0.cmp(&b.0));
-            for (di, idj, dj, flippedj) in m {
-                println!(
-                    "di: {}, idj: {}, dj: {}, flippedj: {}",
-                    di, idj, dj, flippedj
-                );
-                let rotj = match di {
-                    0 => match dj {
-                        0 => ROT180CW,
-                        1 => ROT90CW,
-                        2 => IDENTITY,
-                        3 => ROT270CW,
-                        _ => panic!(),
-                    },
-                    1 => match dj {
-                        0 => ROT270CW,
-                        1 => ROT180CW,
-                        2 => ROT90CW,
-                        3 => IDENTITY,
-                        _ => panic!(),
-                    },
-                    2 => match dj {
-                        0 => IDENTITY,
-                        1 => ROT270CW,
-                        2 => ROT180CW,
-                        3 => ROT90CW,
-                        _ => panic!(),
-                    },
-                    3 => match dj {
-                        0 => ROT90CW,
-                        1 => IDENTITY,
-                        2 => ROT270CW,
-                        3 => ROT180CW,
-                        _ => panic!(),
-                    },
-                    _ => panic!(),
-                };
-                let dir = match di {
-                    0 => aoc::NORTH,
-                    1 => aoc::EAST,
-                    2 => aoc::SOUTH,
-                    3 => aoc::WEST,
-                    _ => panic!(),
-                };
-                let new_dir = aoc::row_mat3_transform_vec2(transform, dir);
-                let new_coord = aoc::point_add(coord, new_dir);
-                println!(
-                    "dir: {:?}, new dir: {:?}, new coord. {:?}",
-                    dir, new_dir, new_coord
-                );
-                let new_id = idj;
-                // let flipi = if flipped {
-                //     if *di == 0 || *di == 2 {
-                //         FLIPY
-                //     } else {
-                //         FLIPX
-                //     }
-                // } else {
-                //     IDENTITY
-                // };
-                let dirj = match dj {
-                    0 => aoc::NORTH,
-                    1 => aoc::EAST,
-                    2 => aoc::SOUTH,
-                    3 => aoc::WEST,
-                    _ => panic!(),
-                };
-                let flipj = if flippedj {
-                    if dj == 0 || dj == 2 {
-                        FLIPX
-                    } else {
-                        FLIPY
-                    }
-                } else {
-                    IDENTITY
-                };
-                let new_transform = aoc::row_mat3_mul(transform, aoc::row_mat3_mul(flipj, rotj));
-                queue.push_back((new_coord, new_id, new_transform));
-            }
-        } else {
-        }
+    // Look at the east neighbor
+    coord = [coord[0] + 1, coord[1]];
+    loop {
+	println!("coord: {:?}", coord);
+	'top: for (id, g) in &grids {
+	    if placed.contains(&id) {
+		continue;
+	    }
+	    // Try to make it fit with the neighbors
+	    for rot in 0..4 {
+		let mut gg = g.clone();
+		match rot {
+		    0 => {},
+		    1 => gg.rotate_90_cw(),
+		    2 => gg.rotate_180_cw(),
+		    3 => gg.rotate_270_cw(),
+		    _ => panic!(),
+		}
+		for flip_x in 0..2 {
+		    let mut ggg = gg.clone();
+		    match flip_x {
+			0 => {},
+			1 => ggg.flip_horizontal(),
+			_ => panic!(),
+		    }
+		    'outer: for flip_y in 0..2 {
+			let mut gggg = ggg.clone();
+			match flip_y {
+			    0 => {},
+			    1 => gggg.flip_vertical(),
+			    _ => panic!(),
+			}
+			for d in aoc::DIRECTIONS.clone() {
+			    let c = aoc::point_add(coord, d);
+			    if let Some((id, g)) = grid_of_grids.get(&c) {
+//				println!("compare to grid: {} at {:?}", id, c);
+				let e = get_edge(&gggg, d);
+				let other_e = match d {
+				    aoc::NORTH => get_edge(g, aoc::SOUTH),
+				    aoc::EAST => get_edge(g, aoc::WEST),
+				    aoc::SOUTH => get_edge(g, aoc::NORTH),
+				    aoc::WEST => get_edge(g, aoc::EAST),
+				    _ => panic!(),
+				};
+				if e != other_e {
+				    continue 'outer;
+				}
+				println!("d: {:?}:  {:?} - {:?}", d, e, other_e);
+			    }
+			}
+			// All existing dirs matched, we can place this here
+			println!("placing {} at {:?}", id, coord);
+			grid_of_grids.insert(coord, (id, gggg.clone()));
+			placed.insert(**id);
+			// go to the next column
+			coord = [coord[0] + 1, coord[1]];
+			continue 'top;
+		    }
+		}
+	    }
+	}
+	// Could not place any grid!
+	println!("{}, {}", grid_of_grids.len(), grids.len());
+	if grid_of_grids.len() == grids.len() {
+	    break;
+	}
+	// go to the next row
+	coord = [0, coord[1] + 1];
+	if coord[1] > 5 {
+	    panic!();
+	}
     }
     println!("{:?}", grid_of_grids);
     let min_x = grid_of_grids.iter().map(|(p, _v)| p[0]).min().unwrap();
@@ -277,61 +249,14 @@ fn part2(input: &Parsed) -> Answer {
     let mut big_grid = HashMap::new();
     let mut xxx = 0;
     let mut yyy = 0;
-    let mut grids = HashMap::new();
-    for (id, g) in input {
-        // let mut gg = vec![];
-        // for y in 1..(g.len() - 1) {
-        //     let ggg = g[y][1..(g[y].len() - 1)].to_owned();
-        //     gg.push(ggg);
-        // }
-        grids.insert(id, g.clone());
-    }
     for y in min_y..=max_y {
         for x in min_x..=max_x {
-            if let Some((id, transform)) = grid_of_grids.get(&[x, y]) {
-                println!("Tile: {}, {:?}", id, transform);
-                let g = grids.get(id).unwrap();
+            if let Some((id, g)) = grid_of_grids.get(&[x, y]) {
+                println!("Tile: {}", id);
                 let ([min_xx, min_yy], [max_xx, max_yy]) = g.extents();
-                let mut tr = HashMap::new();
                 for yy in min_yy..=max_yy {
                     for xx in min_xx..=max_xx {
-                        let xtf = aoc::row_mat3_transform_pos2(*transform, [xx, yy]);
-                        tr.insert([xx, yy], xtf);
-                    }
-                }
-                let min_xxx = tr.iter().map(|(_, b)| b[0]).min().unwrap();
-                let min_yyy = tr.iter().map(|(_, b)| b[1]).min().unwrap();
-                let max_xxx = tr.iter().map(|(_, b)| b[0]).max().unwrap();
-                let max_yyy = tr.iter().map(|(_, b)| b[1]).max().unwrap();
-                //		println!("{}, {}, {}, {}", min_xxx, min_yyy, max_xxx, max_yyy);
-                if max_xx != max_yy {
-                    panic!();
-                }
-                // Transform the grid
-                let mut trg = vec![vec![' '; g.len()]; g[0].len()];
-                for yy in min_yy..=max_yy {
-                    for xx in min_xx..=max_xx {
-                        let diff_x = max_xx - max_xxx;
-                        let diff_y = max_yy - max_yyy;
-                        //			println!("diff: {}, {}", diff_x, diff_y);
-                        // let xtf = aoc::row_mat3_transform_pos2(*transform, [xx, yy]);
-                        // let gc = aoc::point_add(xtf, [diff_x, diff_y]);
-                        let xtf = aoc::row_mat3_transform_pos2(*transform, [xx, yy]);
-                        let gc = aoc::point_add(xtf, [diff_x, diff_y]);
-                        //			println!("{:?} -> {:?} -> {:?}", [xx, yy], xtf, gc);
                         if let Some(v) = g.get_value([xx, yy]) {
-                            print!("{}", v);
-                            trg.set_value(gc, v);
-                        }
-                    }
-                    println!();
-                }
-                println!();
-                // Copy teh transformed grid
-                for yy in min_yy..=max_yy {
-                    for xx in min_xx..=max_xx {
-                        //			println!("{}, {}, {}, {}", max_xx, max_yy, xx, yy);
-                        if let Some(v) = trg.get_value([xx, yy]) {
                             print!("{}", v);
                             big_grid.insert([xxx, yyy], v);
                         } else {
