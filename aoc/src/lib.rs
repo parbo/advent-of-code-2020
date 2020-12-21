@@ -251,7 +251,10 @@ pub fn grid_to_graph<T>(
     is_node: fn(&Point, &T) -> bool,
     get_edge: fn(&Point, &T, &Point, &T) -> Option<i64>,
     directions: usize,
-) -> UnGraphMap<Point, i64> {
+) -> UnGraphMap<Point, i64>
+where
+    T: PartialEq + Copy,
+{
     let directions: Vec<_> = match directions {
         4 => DIRECTIONS.clone(),
         8 => DIRECTIONS_INCL_DIAGONALS.clone(),
@@ -409,7 +412,10 @@ impl Iterator for GridIteratorHelper {
     }
 }
 
-pub trait Grid<T> {
+pub trait Grid<T>
+where
+    T: PartialEq + Copy,
+{
     fn get_value(&self, pos: Point) -> Option<T>;
     fn set_value(&mut self, pos: Point, value: T);
     fn extents(&self) -> (Point, Point);
@@ -422,14 +428,58 @@ pub trait Grid<T> {
     }
     fn flip_horizontal(&mut self);
     fn flip_vertical(&mut self);
-    // fn rotate_90_cw(&mut self);
-    // fn rotate_180_cw(&mut self);
-    // fn rotate_270_cw(&mut self);
+    fn transpose(&mut self);
+    fn rotate_90_cw(&mut self) {
+        self.transpose();
+        self.flip_horizontal();
+    }
+    fn rotate_180_cw(&mut self) {
+        self.flip_vertical();
+        self.flip_horizontal();
+    }
+    fn rotate_270_cw(&mut self) {
+        self.transpose();
+        self.flip_vertical();
+    }
+    fn fill(&mut self, pos: Point, value: T) {
+        let ([min_x, min_y], [max_x, max_y]) = self.extents();
+        if let Some(old) = self.get_value(pos) {
+            if value != old {
+                let mut todo = vec![];
+                todo.push(pos);
+                while let Some(p) = todo.pop() {
+                    if let Some(curr) = self.get_value(p) {
+                        if curr == old {
+                            self.set_value(p, value);
+                            if p[0] > min_x {
+                                todo.push([p[0] - 1, p[1]]);
+                            }
+                            if p[0] < max_x {
+                                todo.push([p[0] + 1, p[1]]);
+                            }
+                            if p[1] > min_y {
+                                todo.push([p[0], p[1] - 1]);
+                            }
+                            if p[1] < max_y {
+                                todo.push([p[0], p[1] + 1]);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    fn line(&mut self, a: Point, b: Point, value: T) {
+	let line = plot_line(a, b);
+	for p in line {
+	    self.set_value(p, value);
+	}
+    }
 }
 
 impl<S: ::std::hash::BuildHasher, T> Grid<T> for HashMap<Point, T, S>
 where
-    T: Clone + Copy,
+    T: Clone + Copy + Default + PartialEq,
 {
     fn get_value(&self, pos: Point) -> Option<T> {
         if let Some(x) = self.get(&pos) {
@@ -472,11 +522,21 @@ where
             self.insert(k, v);
         }
     }
+    fn transpose(&mut self) {
+        let mut new_grid = HashMap::new();
+        for ([x, y], v) in self.iter() {
+            new_grid.insert([*y, *x], *v);
+        }
+        self.clear();
+        for (k, v) in new_grid {
+            self.insert(k, v);
+        }
+    }
 }
 
 impl<T> Grid<T> for Vec<Vec<T>>
 where
-    T: Clone + Copy,
+    T: Clone + Copy + Default + PartialEq,
 {
     fn get_value(&self, pos: Point) -> Option<T> {
         let [x, y] = pos;
@@ -528,11 +588,31 @@ where
         }
         *self = new_vec;
     }
+    fn transpose(&mut self) {
+        let ([min_x, min_y], [max_x, max_y]) = self.extents();
+        let width = (max_x - min_x + 1) as usize;
+        let height = (max_y - min_y + 1) as usize;
+        // Make a vec with the transposed dimensions
+        let mut new_vec = Vec::with_capacity(width);
+        for _ in min_x..=max_x {
+            let mut row = Vec::with_capacity(height);
+            row.resize_with(height, Default::default);
+            new_vec.push(row);
+        }
+        for y in min_y..=max_y {
+            for x in min_x..=max_x {
+                let v = self[y as usize][x as usize];
+                new_vec[x as usize][y as usize] = v;
+            }
+        }
+        *self = new_vec;
+    }
 }
 
 pub trait GridDrawer<G, T>
 where
     G: Grid<T>,
+    T: PartialEq + Copy,
 {
     fn draw(&mut self, area: &G);
 }
@@ -542,6 +622,7 @@ pub struct NopGridDrawer {}
 impl<G, T> GridDrawer<G, T> for NopGridDrawer
 where
     G: Grid<T>,
+    T: PartialEq + Copy,
 {
     fn draw(&mut self, _: &G) {}
 }
@@ -574,6 +655,7 @@ impl<F, G, T> GridDrawer<G, T> for PrintGridDrawer<F, T>
 where
     F: Fn(T) -> char,
     G: Grid<T>,
+    T: PartialEq + Copy,
 {
     fn draw(&mut self, area: &G) {
         let ([min_x, min_y], [max_x, max_y]) = area.extents();
@@ -637,6 +719,7 @@ impl<F, G, T> GridDrawer<G, T> for CursesGridDrawer<F, T>
 where
     F: Fn(T) -> char,
     G: Grid<T>,
+    T: PartialEq + Copy,
 {
     fn draw(&mut self, area: &G) {
         self.window.clear();
@@ -664,6 +747,7 @@ pub struct BitmapGridDrawer<F, G, T>
 where
     F: Fn(T) -> Vec<(u8, u8, u8)>,
     G: Grid<T>,
+    T: PartialEq + Copy,
 {
     sprite_dimension: (i64, i64),
     to_sprite: F,
@@ -682,6 +766,7 @@ impl<F, G, T> BitmapGridDrawer<F, G, T>
 where
     F: Fn(T) -> Vec<(u8, u8, u8)>,
     G: Grid<T>,
+    T: PartialEq + Copy,
 {
     pub fn new(
         sprite_dimension: (i64, i64),
@@ -784,6 +869,7 @@ impl<F, G, T> GridDrawer<G, T> for BitmapGridDrawer<F, G, T>
 where
     F: Fn(T) -> Vec<(u8, u8, u8)>,
     G: Grid<T>,
+    T: PartialEq + Copy,
 {
     fn draw(&mut self, area: &G) {
         self.draw_grid(area);
