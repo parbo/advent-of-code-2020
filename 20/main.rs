@@ -38,6 +38,12 @@ fn get_matches(input: &Parsed) -> HashMap<i64, Vec<(i64, i64, i64, bool)>> {
             get_edge(&input[i].1, aoc::SOUTH),
             get_edge(&input[i].1, aoc::WEST),
         ];
+        for e in &edges {
+            let mut ee = e.to_owned();
+            ee.reverse();
+            println!("{:?}", e);
+            println!("{:?}", ee);
+        }
         for j in 0..input.len() {
             if i == j {
                 continue;
@@ -140,96 +146,113 @@ fn find_monsters(
     coords
 }
 
-fn part2(input: &Parsed) -> Answer {
-    let matches = get_matches(input);
-    let mut grid_of_grids = HashMap::new();
-    let mut grids = HashMap::new();
-    let mut placed = HashSet::new();
-    for (id, g) in input {
-        grids.insert(id, g.clone());
+fn place(
+    grids: &HashMap<i64, Vec<Vec<char>>>,
+    coord: aoc::Point,
+    placed: HashSet<i64>,
+    grid_of_grids: HashMap<aoc::Point, (i64, Vec<Vec<char>>)>,
+) -> HashMap<aoc::Point, (i64, Vec<Vec<char>>)> {
+    if grid_of_grids.len() == grids.len() {
+        return grid_of_grids;
     }
-    // Find one corner to use as a starting point
-    let mut coord = [0, 0];
-    for (id, b) in &matches {
-        if b.len() == 2 {
-	    println!("placing {} at {:?}", id, coord);
-	    grid_of_grids.insert(coord, (id, grids.get(&id).unwrap().clone()));
-	    placed.insert(*id);
-	    break;
+    let expected = (grids.len() as f64).sqrt() as i64;
+    // println!("== gog ==");
+    // for y in 0..expected {
+    // 	for x in 0..expected {
+    // 	    if let Some((id, _)) = grid_of_grids.get(&[x, y]) {
+    // 		print!("{}, ", id);
+    // 	    } else {
+    // 		print!("    , ");
+    // 	    }
+    // 	}
+    // 	println!();
+    // }
+    // println!("coord: {:?}", coord);
+    let mut candidates = vec![];
+    for (id, g) in grids {
+        if placed.contains(&id) {
+            continue;
+        }
+        // Try to make it fit with the neighbors
+        for rot in 0..4 {
+            let mut gg = g.clone();
+            match rot {
+                0 => {}
+                1 => gg.rotate_90_cw(),
+                2 => gg.rotate_180_cw(),
+                3 => gg.rotate_270_cw(),
+                _ => panic!(),
+            }
+            for flip_x in 0..2 {
+                let mut ggg = gg.clone();
+                match flip_x {
+                    0 => {}
+                    1 => ggg.flip_horizontal(),
+                    _ => panic!(),
+                }
+                'outer: for flip_y in 0..2 {
+                    let mut gggg = ggg.clone();
+                    match flip_y {
+                        0 => {}
+                        1 => gggg.flip_vertical(),
+                        _ => panic!(),
+                    }
+                    for d in aoc::DIRECTIONS.clone() {
+                        let c = aoc::point_add(coord, d);
+                        if let Some((id, g)) = grid_of_grids.get(&c) {
+                            let e = get_edge(&gggg, d);
+                            let other_e = match d {
+                                aoc::NORTH => get_edge(g, aoc::SOUTH),
+                                aoc::EAST => get_edge(g, aoc::WEST),
+                                aoc::SOUTH => get_edge(g, aoc::NORTH),
+                                aoc::WEST => get_edge(g, aoc::EAST),
+                                _ => panic!(),
+                            };
+                            if e != other_e {
+                                continue 'outer;
+                            }
+                        }
+                    }
+                    // All existing dirs matched, we can place this here
+                    candidates.push((id, gggg.clone()));
+                }
+            }
         }
     }
-    // Look at the east neighbor
-    coord = [coord[0] + 1, coord[1]];
-    loop {
-	println!("coord: {:?}", coord);
-	'top: for (id, g) in &grids {
-	    if placed.contains(&id) {
-		continue;
+    if candidates.len() > 0 {
+        // println!("cand: {:?}", candidates.len());
+        // println!("placing {} at {:?}", id, coord);
+	for (id, g) in candidates {
+	    let mut gog = grid_of_grids.clone();
+            gog.insert(coord, (*id, g.clone()));
+            let mut p = placed.clone();
+	    p.insert(*id);
+            // go to the next coord
+            let new_coord = if coord[0] + 1 < expected {
+		[coord[0] + 1, coord[1]]
+	    } else {
+		[0, coord[1] + 1]
+	    };
+	    let next_gog = place(grids, new_coord, p, gog);
+	    if !next_gog.is_empty() {
+		return next_gog;
 	    }
-	    // Try to make it fit with the neighbors
-	    for rot in 0..4 {
-		let mut gg = g.clone();
-		match rot {
-		    0 => {},
-		    1 => gg.rotate_90_cw(),
-		    2 => gg.rotate_180_cw(),
-		    3 => gg.rotate_270_cw(),
-		    _ => panic!(),
-		}
-		for flip_x in 0..2 {
-		    let mut ggg = gg.clone();
-		    match flip_x {
-			0 => {},
-			1 => ggg.flip_horizontal(),
-			_ => panic!(),
-		    }
-		    'outer: for flip_y in 0..2 {
-			let mut gggg = ggg.clone();
-			match flip_y {
-			    0 => {},
-			    1 => gggg.flip_vertical(),
-			    _ => panic!(),
-			}
-			for d in aoc::DIRECTIONS.clone() {
-			    let c = aoc::point_add(coord, d);
-			    if let Some((id, g)) = grid_of_grids.get(&c) {
-//				println!("compare to grid: {} at {:?}", id, c);
-				let e = get_edge(&gggg, d);
-				let other_e = match d {
-				    aoc::NORTH => get_edge(g, aoc::SOUTH),
-				    aoc::EAST => get_edge(g, aoc::WEST),
-				    aoc::SOUTH => get_edge(g, aoc::NORTH),
-				    aoc::WEST => get_edge(g, aoc::EAST),
-				    _ => panic!(),
-				};
-				if e != other_e {
-				    continue 'outer;
-				}
-				println!("d: {:?}:  {:?} - {:?}", d, e, other_e);
-			    }
-			}
-			// All existing dirs matched, we can place this here
-			println!("placing {} at {:?}", id, coord);
-			grid_of_grids.insert(coord, (id, gggg.clone()));
-			placed.insert(**id);
-			// go to the next column
-			coord = [coord[0] + 1, coord[1]];
-			continue 'top;
-		    }
-		}
-	    }
-	}
-	// Could not place any grid!
-	println!("{}, {}", grid_of_grids.len(), grids.len());
-	if grid_of_grids.len() == grids.len() {
-	    break;
-	}
-	// go to the next row
-	coord = [0, coord[1] + 1];
-	if coord[1] > 5 {
-	    panic!();
-	}
+        }
+    // } else {
+    // 	println!("no candidates!");
     }
+    HashMap::new()
+}
+
+fn part2(input: &Parsed) -> Answer {
+    let mut grids = HashMap::new();
+    for (id, g) in input {
+        grids.insert(*id, g.clone());
+    }
+    let coord = [0, 0];
+    let grid_of_grids = HashMap::new();
+    let placed = HashSet::new();
+    let grid_of_grids = place(&grids, coord, placed, grid_of_grids);
     println!("{:?}", grid_of_grids);
     let min_x = grid_of_grids.iter().map(|(p, _v)| p[0]).min().unwrap();
     let min_y = grid_of_grids.iter().map(|(p, _v)| p[1]).min().unwrap();
@@ -237,7 +260,7 @@ fn part2(input: &Parsed) -> Answer {
     let max_y = grid_of_grids.iter().map(|(p, _v)| p[1]).max().unwrap();
     for y in min_y..=max_y {
         for x in min_x..=max_x {
-            if let Some((id, _transform)) = grid_of_grids.get(&[x, y]) {
+            if let Some((id, _)) = grid_of_grids.get(&[x, y]) {
                 print!("{}, ", id);
             } else {
                 print!("    , ");
@@ -254,8 +277,8 @@ fn part2(input: &Parsed) -> Answer {
             if let Some((id, g)) = grid_of_grids.get(&[x, y]) {
                 println!("Tile: {}", id);
                 let ([min_xx, min_yy], [max_xx, max_yy]) = g.extents();
-                for yy in min_yy..=max_yy {
-                    for xx in min_xx..=max_xx {
+                for yy in (min_yy+1)..max_yy {
+                    for xx in (min_xx+1)..max_xx {
                         if let Some(v) = g.get_value([xx, yy]) {
                             print!("{}", v);
                             big_grid.insert([xxx, yyy], v);
@@ -265,13 +288,13 @@ fn part2(input: &Parsed) -> Answer {
                         xxx += 1;
                     }
                     println!();
-                    xxx -= max_xx - min_xx + 1;
+                    xxx -= max_xx - min_xx - 1;
                     yyy += 1;
                 }
                 println!();
-                xxx += max_xx - min_xx + 1;
+                xxx += max_xx - min_xx - 1;
                 if x != max_x {
-                    yyy -= max_yy - min_yy + 1;
+                    yyy -= max_yy - min_yy - 1;
                 }
             } else {
                 panic!();
