@@ -427,15 +427,18 @@ pub trait Grid<T> {
     // fn rotate_270_cw(&mut self);
 }
 
-impl<S: ::std::hash::BuildHasher> Grid<i64> for HashMap<Point, i64, S> {
-    fn get_value(&self, pos: Point) -> Option<i64> {
+impl<S: ::std::hash::BuildHasher, T> Grid<T> for HashMap<Point, T, S>
+where
+    T: Clone + Copy,
+{
+    fn get_value(&self, pos: Point) -> Option<T> {
         if let Some(x) = self.get(&pos) {
             Some(*x)
         } else {
             None
         }
     }
-    fn set_value(&mut self, pos: Point, value: i64) {
+    fn set_value(&mut self, pos: Point, value: T) {
         *self.entry(pos).or_insert(value) = value;
     }
     fn extents(&self) -> (Point, Point) {
@@ -471,52 +474,11 @@ impl<S: ::std::hash::BuildHasher> Grid<i64> for HashMap<Point, i64, S> {
     }
 }
 
-impl<S: ::std::hash::BuildHasher> Grid<char> for HashMap<Point, char, S> {
-    fn get_value(&self, pos: Point) -> Option<char> {
-        if let Some(x) = self.get(&pos) {
-            Some(*x)
-        } else {
-            None
-        }
-    }
-    fn set_value(&mut self, pos: Point, value: char) {
-        *self.entry(pos).or_insert(value) = value;
-    }
-    fn extents(&self) -> (Point, Point) {
-        let min_x = self.iter().map(|(p, _v)| p[0]).min().unwrap();
-        let min_y = self.iter().map(|(p, _v)| p[1]).min().unwrap();
-        let max_x = self.iter().map(|(p, _v)| p[0]).max().unwrap();
-        let max_y = self.iter().map(|(p, _v)| p[1]).max().unwrap();
-        ([min_x, min_y], [max_x, max_y])
-    }
-    fn flip_horizontal(&mut self) {
-        let ([min_x, _min_y], [max_x, _max_y]) = self.extents();
-        let mut new_grid = HashMap::new();
-        for ([x, y], v) in self.iter() {
-            let new_x = max_x - (x - min_x);
-            new_grid.insert([new_x, *y], *v);
-        }
-        self.clear();
-        for (k, v) in new_grid {
-            self.insert(k, v);
-        }
-    }
-    fn flip_vertical(&mut self) {
-        let ([_min_x, min_y], [_max_x, max_y]) = self.extents();
-        let mut new_grid = HashMap::new();
-        for ([x, y], v) in self.iter() {
-            let new_y = max_y - (y - min_y);
-            new_grid.insert([*x, new_y], *v);
-        }
-        self.clear();
-        for (k, v) in new_grid {
-            self.insert(k, v);
-        }
-    }
-}
-
-impl Grid<i64> for Vec<Vec<i64>> {
-    fn get_value(&self, pos: Point) -> Option<i64> {
+impl<T> Grid<T> for Vec<Vec<T>>
+where
+    T: Clone + Copy,
+{
+    fn get_value(&self, pos: Point) -> Option<T> {
         let [x, y] = pos;
         if let Some(line) = self.get(y as usize) {
             if let Some(c) = line.get(x as usize) {
@@ -525,7 +487,7 @@ impl Grid<i64> for Vec<Vec<i64>> {
         }
         None
     }
-    fn set_value(&mut self, pos: Point, value: i64) {
+    fn set_value(&mut self, pos: Point, value: T) {
         let [x, y] = pos;
         if let Some(line) = self.get_mut(y as usize) {
             if let Some(c) = line.get_mut(x as usize) {
@@ -561,63 +523,6 @@ impl Grid<i64> for Vec<Vec<i64>> {
             for x in min_x..=max_x {
                 let v = self[y as usize][x as usize];
                 let new_y = max_y - (y - min_y);
-                new_vec[new_y as usize][x as usize] = v;
-            }
-        }
-        *self = new_vec;
-    }
-}
-
-impl Grid<char> for Vec<Vec<char>> {
-    fn get_value(&self, pos: Point) -> Option<char> {
-        let [x, y] = pos;
-        if let Some(line) = self.get(y as usize) {
-            if let Some(c) = line.get(x as usize) {
-                return Some(*c);
-            }
-        }
-        None
-    }
-    fn set_value(&mut self, pos: Point, value: char) {
-        let [x, y] = pos;
-        if let Some(line) = self.get_mut(y as usize) {
-            if let Some(c) = line.get_mut(x as usize) {
-                *c = value;
-            }
-        }
-    }
-    fn extents(&self) -> (Point, Point) {
-        if !self.is_empty() && !self[0].is_empty() {
-            return (
-                [0, 0],
-                [(self[0].len() - 1) as i64, (self.len() - 1) as i64],
-            );
-        }
-        ([0, 0], [0, 0])
-    }
-    fn flip_horizontal(&mut self) {
-        let ([min_x, min_y], [max_x, max_y]) = self.extents();
-        let mut new_vec = self.clone();
-        for y in min_y..=max_y {
-            for x in min_x..=max_x {
-                let v = self[y as usize][x as usize];
-                let new_x = max_x - (x - min_x);
-                new_vec[y as usize][new_x as usize] = v;
-            }
-        }
-        *self = new_vec;
-    }
-    fn flip_vertical(&mut self) {
-        let ([min_x, min_y], [max_x, max_y]) = self.extents();
-        let mut new_vec = self.clone();
-        let ([min_xx, min_yy], [max_xx, max_yy]) = new_vec.extents();
-        println!("{}, {}, {}, {}", min_x, min_y, max_x, max_y);
-        println!("{}, {}, {}, {}", min_xx, min_yy, max_xx, max_yy);
-        for y in min_y..=max_y {
-            for x in min_x..=max_x {
-                let v = self[y as usize][x as usize];
-                let new_y = max_y - (y - min_y);
-                println!("{}, {} -> {}, {}", x, y, x, new_y);
                 new_vec[new_y as usize][x as usize] = v;
             }
         }
