@@ -246,33 +246,20 @@ fn part2(input: &Parsed) -> Answer {
     let max_x = grid_of_grids.iter().map(|(p, _v)| p[0]).max().unwrap();
     let max_y = grid_of_grids.iter().map(|(p, _v)| p[1]).max().unwrap();
     let mut big_grid = HashMap::new();
-    let mut xxx = 0;
-    let mut yyy = 0;
+    let mut xx = 0;
+    let mut yy = 0;
+    // Minus the borders
+    let gh = (input[0].1.len() - 2) as i64;
+    let gw = (input[0].1[0].len() - 2) as i64;
     for y in min_y..=max_y {
         for x in min_x..=max_x {
-            if let Some((_id, g)) = grid_of_grids.get(&[x, y]) {
-                let ([min_xx, min_yy], [max_xx, max_yy]) = g.extents();
-                for yy in (min_yy + 1)..max_yy {
-                    for xx in (min_xx + 1)..max_xx {
-                        if let Some(v) = g.get_value([xx, yy]) {
-                            big_grid.insert([xxx, yyy], v);
-                        } else {
-                            panic!();
-                        }
-                        xxx += 1;
-                    }
-                    xxx -= max_xx - min_xx - 1;
-                    yyy += 1;
-                }
-                xxx += max_xx - min_xx - 1;
-                if x != max_x {
-                    yyy -= max_yy - min_yy - 1;
-                }
-            } else {
-                panic!();
-            }
+            let (_id, g) = grid_of_grids.get(&[x, y]).unwrap();
+            // Cut out the borders
+            big_grid.blit_rect([xx, yy], g, [1, 1], [gw, gh]);
+            xx += gw;
         }
-        xxx = 0;
+        xx = 0;
+        yy += gh;
     }
     // Find the sea monsters
     let hashes = big_grid.iter().filter(|(_p, v)| **v == '#').count();

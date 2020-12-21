@@ -475,6 +475,26 @@ where
 	    self.set_value(p, value);
 	}
     }
+    fn blit(&mut self, pos: Point, g: &dyn Grid<T>) {
+	let (start, end) = g.extents();
+	self.blit_rect(pos, g, start, end);
+    }
+    // pos is position to blit to, start/end is the rect to copy from grid
+    fn blit_rect(&mut self, pos: Point, g: &dyn Grid<T>, start: Point, end: Point) {
+        let ([min_x, min_y], [max_x, max_y]) = g.extents();
+	let min_xx = min_x.max(start[0]);
+	let min_yy = min_y.max(start[1]);
+	let max_xx = max_x.min(end[0]);
+	let max_yy = max_y.min(end[1]);
+        for (dy, yy) in (min_yy..=max_yy).enumerate() {
+            for (dx, xx) in (min_xx..=max_xx).enumerate() {
+		let [xxx, yyy] = point_add(pos, [dx as i64, dy as i64]);
+                if let Some(v) = g.get_value([xx, yy]) {
+                    self.set_value([xxx, yyy], v);
+                }
+            }
+        }
+    }
 }
 
 impl<S: ::std::hash::BuildHasher, T> Grid<T> for HashMap<Point, T, S>
