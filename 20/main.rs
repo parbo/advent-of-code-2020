@@ -216,6 +216,14 @@ fn place(
                     2 => ggg.flip_vertical(),
                     _ => panic!(),
                 }
+		// let mut gog = grid_of_grids.clone();
+		// gog.insert(coord, (*id, ggg.clone()));
+		// let mut big_grid = stitch_grids(&gog);
+		// if !big_grid.is_empty() {
+		//     big_grid.set_value([0, 0], '.');
+		//     big_grid.set_value([95, 95], '.');
+		//     gd.draw(&big_grid);
+		// }
                 for d in aoc::DIRECTIONS.clone() {
                     let c = aoc::point_add(coord, d);
                     if let Some((_id, g)) = grid_of_grids.get(&c) {
