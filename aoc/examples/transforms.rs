@@ -74,11 +74,11 @@ fn transform_sparse() {
     let mut orig_grid = HashMap::new();
     // Let's make the sparse one not have top left at 0, 0.
     for p in non_sparse_grid.points() {
-	if let Some(v) = non_sparse_grid.get_value(p) {
-	    if v != '.' {
-		orig_grid.insert([p[0] - 2, p[1] - 5], v);
-	    }
-	}
+        if let Some(v) = non_sparse_grid.get_value(p) {
+            if v != '.' {
+                orig_grid.insert([p[0] - 2, p[1] - 5], v);
+            }
+        }
     }
     let mut gd = aoc::PrintGridDrawer::new(|x| x);
     println!("Original:");
@@ -122,10 +122,38 @@ fn transform_sparse() {
     gd.draw(&grid);
 }
 
+fn blit() {
+    let mut g: Vec<String> = vec![];
+    g.push("+........+".into());
+    g.push("..........".into());
+    g.push("..........".into());
+    g.push("..........".into());
+    g.push("..........".into());
+    g.push("..........".into());
+    g.push("..........".into());
+    g.push("..........".into());
+    g.push("..........".into());
+    g.push("+.......+".into());
+    let mut g2: Vec<String> = vec![];
+    g2.push("...#..#.".into());
+    g2.push(".#######".into());
+    g2.push("..#..#..".into());
+    g2.push("######..".into());
+    g2.push("#..#....".into());
+    let mut grid = aoc::parse_grid(&g);
+    let grid2 = aoc::parse_grid(&g2);
+    let mut gd = aoc::PrintGridDrawer::new(|x| x);
+    grid.blit([1, 2], &grid2);
+    gd.draw(&grid);
+}
+
 fn main() {
     println!("== Regular grid ==");
     transform();
     println!();
     println!("== Sparse grid ==");
     transform_sparse();
+    println!();
+    println!("== Blitting ==");
+    blit();
 }
