@@ -41,8 +41,13 @@ pub type Mat4 = self::vecmath::Matrix4<i64>;
 pub type FMat4 = self::vecmath::Matrix4<f64>;
 pub type Mat3 = self::vecmath::Matrix3<i64>;
 
+pub use self::vecmath::mat3_id;
+pub use self::vecmath::mat3_inv;
 pub use self::vecmath::mat4_id as mat_identity;
 pub use self::vecmath::mat4_transposed as mat_transpose;
+pub use self::vecmath::row_mat3_mul;
+pub use self::vecmath::row_mat3_transform_pos2;
+pub use self::vecmath::row_mat3_transform_vec2;
 pub use self::vecmath::row_mat4_mul as mat_mul;
 pub use self::vecmath::row_mat4_transform as mat_transform;
 pub use self::vecmath::vec2_add as point_add;
@@ -61,11 +66,6 @@ pub use self::vecmath::vec3_scale as vec_mul;
 pub use self::vecmath::vec3_square_len as vec_square_length;
 pub use self::vecmath::vec3_sub as vec_sub;
 pub use self::vecmath::vec4_add;
-pub use self::vecmath::mat3_id;
-pub use self::vecmath::mat3_inv;
-pub use self::vecmath::row_mat3_mul;
-pub use self::vecmath::row_mat3_transform_vec2;
-pub use self::vecmath::row_mat3_transform_pos2;
 
 pub fn length(v: FVec3) -> f64 {
     vec_square_length(v).sqrt()
@@ -420,6 +420,11 @@ pub trait Grid<T> {
             curr: Some(extents.0),
         }
     }
+    fn flip_horizontal(&mut self);
+    fn flip_vertical(&mut self);
+    // fn rotate_90_cw(&mut self);
+    // fn rotate_180_cw(&mut self);
+    // fn rotate_270_cw(&mut self);
 }
 
 impl<S: ::std::hash::BuildHasher> Grid<i64> for HashMap<Point, i64, S> {
@@ -440,6 +445,30 @@ impl<S: ::std::hash::BuildHasher> Grid<i64> for HashMap<Point, i64, S> {
         let max_y = self.iter().map(|(p, _v)| p[1]).max().unwrap();
         ([min_x, min_y], [max_x, max_y])
     }
+    fn flip_horizontal(&mut self) {
+        let ([min_x, _min_y], [max_x, _max_y]) = self.extents();
+        let mut new_grid = HashMap::new();
+        for ([x, y], v) in self.iter() {
+            let new_x = max_x - (x - min_x);
+            new_grid.insert([new_x, *y], *v);
+        }
+        self.clear();
+        for (k, v) in new_grid {
+            self.insert(k, v);
+        }
+    }
+    fn flip_vertical(&mut self) {
+        let ([_min_x, min_y], [_max_x, max_y]) = self.extents();
+        let mut new_grid = HashMap::new();
+        for ([x, y], v) in self.iter() {
+            let new_y = max_y - (y - min_y);
+            new_grid.insert([*x, new_y], *v);
+        }
+        self.clear();
+        for (k, v) in new_grid {
+            self.insert(k, v);
+        }
+    }
 }
 
 impl<S: ::std::hash::BuildHasher> Grid<char> for HashMap<Point, char, S> {
@@ -459,6 +488,30 @@ impl<S: ::std::hash::BuildHasher> Grid<char> for HashMap<Point, char, S> {
         let max_x = self.iter().map(|(p, _v)| p[0]).max().unwrap();
         let max_y = self.iter().map(|(p, _v)| p[1]).max().unwrap();
         ([min_x, min_y], [max_x, max_y])
+    }
+    fn flip_horizontal(&mut self) {
+        let ([min_x, _min_y], [max_x, _max_y]) = self.extents();
+        let mut new_grid = HashMap::new();
+        for ([x, y], v) in self.iter() {
+            let new_x = max_x - (x - min_x);
+            new_grid.insert([new_x, *y], *v);
+        }
+        self.clear();
+        for (k, v) in new_grid {
+            self.insert(k, v);
+        }
+    }
+    fn flip_vertical(&mut self) {
+        let ([_min_x, min_y], [_max_x, max_y]) = self.extents();
+        let mut new_grid = HashMap::new();
+        for ([x, y], v) in self.iter() {
+            let new_y = max_y - (y - min_y);
+            new_grid.insert([*x, new_y], *v);
+        }
+        self.clear();
+        for (k, v) in new_grid {
+            self.insert(k, v);
+        }
     }
 }
 
@@ -489,6 +542,30 @@ impl Grid<i64> for Vec<Vec<i64>> {
         }
         ([0, 0], [0, 0])
     }
+    fn flip_horizontal(&mut self) {
+        let ([min_x, min_y], [max_x, max_y]) = self.extents();
+        let mut new_vec = self.clone();
+        for y in min_y..=max_y {
+            for x in min_x..=max_x {
+                let v = self[y as usize][x as usize];
+                let new_x = max_x - (x - min_x);
+                new_vec[y as usize][new_x as usize] = v;
+            }
+        }
+        *self = new_vec;
+    }
+    fn flip_vertical(&mut self) {
+        let ([min_x, min_y], [max_x, max_y]) = self.extents();
+        let mut new_vec = self.clone();
+        for y in min_y..=max_y {
+            for x in min_x..=max_x {
+                let v = self[y as usize][x as usize];
+                let new_y = max_y - (y - min_y);
+                new_vec[new_y as usize][x as usize] = v;
+            }
+        }
+        *self = new_vec;
+    }
 }
 
 impl Grid<char> for Vec<Vec<char>> {
@@ -517,6 +594,34 @@ impl Grid<char> for Vec<Vec<char>> {
             );
         }
         ([0, 0], [0, 0])
+    }
+    fn flip_horizontal(&mut self) {
+        let ([min_x, min_y], [max_x, max_y]) = self.extents();
+        let mut new_vec = self.clone();
+        for y in min_y..=max_y {
+            for x in min_x..=max_x {
+                let v = self[y as usize][x as usize];
+                let new_x = max_x - (x - min_x);
+                new_vec[y as usize][new_x as usize] = v;
+            }
+        }
+        *self = new_vec;
+    }
+    fn flip_vertical(&mut self) {
+        let ([min_x, min_y], [max_x, max_y]) = self.extents();
+        let mut new_vec = self.clone();
+        let ([min_xx, min_yy], [max_xx, max_yy]) = new_vec.extents();
+        println!("{}, {}, {}, {}", min_x, min_y, max_x, max_y);
+        println!("{}, {}, {}, {}", min_xx, min_yy, max_xx, max_yy);
+        for y in min_y..=max_y {
+            for x in min_x..=max_x {
+                let v = self[y as usize][x as usize];
+                let new_y = max_y - (y - min_y);
+                println!("{}, {} -> {}, {}", x, y, x, new_y);
+                new_vec[new_y as usize][x as usize] = v;
+            }
+        }
+        *self = new_vec;
     }
 }
 
@@ -851,5 +956,53 @@ mod tests {
         let modulii = [3, 5, 7];
         let residues = [2, 3, 2];
         assert_eq!(chinese_remainder(&residues, &modulii), Some(23));
+    }
+
+    #[test]
+    fn test_flip() {
+        // Vecs
+        let orig_g: Vec<Vec<char>> = vec!["####".chars().collect(), "#   ".chars().collect()];
+        let mut g = orig_g.clone();
+        let expected: Vec<Vec<char>> = vec!["#   ".chars().collect(), "####".chars().collect()];
+        g.flip_vertical();
+        assert_eq!(g, expected);
+        let mut g = orig_g.clone();
+        let expected: Vec<Vec<char>> = vec!["####".chars().collect(), "   #".chars().collect()];
+        g.flip_horizontal();
+        assert_eq!(g, expected);
+        // Hashmaps
+        let orig_g: HashMap<Point, char> = vec![
+            ([-1, 0], '#'),
+            ([0, 0], '#'),
+            ([1, 0], '#'),
+            ([2, 0], '#'),
+            ([-1, 1], '#'),
+        ]
+        .into_iter()
+        .collect();
+        let mut g = orig_g.clone();
+        let expected: HashMap<Point, char> = vec![
+            ([-1, 1], '#'),
+            ([0, 1], '#'),
+            ([1, 1], '#'),
+            ([2, 1], '#'),
+            ([-1, 0], '#'),
+        ]
+        .into_iter()
+        .collect();
+        g.flip_vertical();
+        assert_eq!(g, expected);
+        let mut g = orig_g.clone();
+        let expected: HashMap<Point, char> = vec![
+            ([-1, 0], '#'),
+            ([0, 0], '#'),
+            ([1, 0], '#'),
+            ([2, 0], '#'),
+            ([2, 1], '#'),
+        ]
+        .into_iter()
+        .collect();
+        g.flip_horizontal();
+        assert_eq!(g, expected);
     }
 }
