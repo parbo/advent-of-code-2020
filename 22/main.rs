@@ -44,10 +44,7 @@ fn recursive_combat(
             break;
         }
         // round += 1;
-        let game = seen.len() + 1;
-        if game % 10000 == 0 {
-            println!("game: {}", game);
-        }
+        // let game = seen.len() + 1;
         // println!("-- Round {} (Game {}) --", round, game);
         // println!("Player 1's cards: {:?}", a);
         // println!("Player 2's cards: {:?}", b);
@@ -61,8 +58,9 @@ fn recursive_combat(
                 let mut aa = a.iter().take(top_a).map(|x| *x).collect();
                 let mut bb = b.iter().take(top_b).map(|x| *x).collect();
                 // println!("Playing a sub-game to determine the winner...");
-		let mut ss = HashSet::new();
+                let mut ss = HashSet::new();
                 recursive_combat(&mut aa, &mut bb, &mut ss);
+                //println!("sub seen: {}", ss.len());
                 // println!("...anyway, back to game {}", game);
                 a_wins = aa.len() > bb.len();
             }
@@ -88,6 +86,7 @@ fn part2(decks: &Parsed) -> Answer {
     let mut b = decks.1.clone();
     let mut seen = HashSet::new();
     recursive_combat(&mut a, &mut b, &mut seen);
+    // println!("seen: {}", seen.len());
     let win = if a.len() > b.len() { a } else { b };
     score(&win)
 }
