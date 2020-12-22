@@ -1,0 +1,12 @@
+[package]
+name = 'day22'
+version = '0.0.1'
+edition = '2018'
+
+[dependencies]
+aoc = {path = "../aoc"}
+parse-display = "0.4.0"
+
+[[bin]]
+name = 'day22'
+path = 'main.rs'
