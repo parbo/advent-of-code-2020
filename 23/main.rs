@@ -4,17 +4,6 @@ use std::iter::*;
 type Parsed = VecDeque<i64>;
 type Answer = String;
 
-fn make_cups(cups: &Parsed, total: usize) -> Parsed {
-    let mut cups = cups.clone();
-    cups.reserve(total);
-    let mut x = *cups.iter().max().unwrap() + 1;
-    while cups.len() < total {
-        cups.push_back(x);
-        x += 1;
-    }
-    cups
-}
-
 fn get_values(ll: &[i64]) -> Vec<i64> {
     let mut s = vec![1];
     s.reserve(ll.len());
@@ -26,13 +15,18 @@ fn get_values(ll: &[i64]) -> Vec<i64> {
     s
 }
 
-fn rounds(cups: &Parsed, num: usize) -> Vec<i64> {
+fn rounds(cups: &Parsed, num: usize, total: usize) -> Vec<i64> {
     // Compute min/max
-    let total = cups.len();
-    let mut get_next = vec![];
+    let mut get_next: Vec<i64> = vec![];
     get_next.resize(total + 1, 0);
     for i in 0..cups.len() {
-        get_next[cups[i] as usize] = cups[((i + 1) % cups.len()) as usize];
+        get_next[cups[i] as usize] = cups[(i + 1) % cups.len()];
+    }
+    for i in cups.len()..total {
+        get_next[i] = (i + 1) as i64;
+    }
+    if total > cups.len() {
+        get_next[total] = cups[0];
     }
     let mut node = cups[0];
     for _i in 0..num {
@@ -79,8 +73,7 @@ fn rounds(cups: &Parsed, num: usize) -> Vec<i64> {
 }
 
 fn part1(cups: &Parsed) -> Answer {
-    let all_cups = make_cups(cups, cups.len());
-    let c = rounds(&all_cups, 100);
+    let c = rounds(&cups, 100, cups.len());
     get_values(&c)
         .iter()
         .skip(1)
@@ -90,8 +83,7 @@ fn part1(cups: &Parsed) -> Answer {
 }
 
 fn part2(cups: &Parsed) -> i64 {
-    let all_cups = make_cups(cups, 1000000);
-    let c = rounds(&all_cups, 10000000);
+    let c = rounds(&cups, 10000000, 1000000);
     let a = c[1];
     let b = c[a as usize];
     a * b
@@ -124,8 +116,10 @@ mod tests {
     fn test_part1() {
         let input = vec!["389125467".to_string()];
         let parsed = parse(&input);
-        let ll = rounds(&parsed, 10);
+        let ll = rounds(&parsed, 10, parsed.len());
+        println!("ll: {:?}", ll);
         let s = get_values(&ll);
+        println!("s: {:?}", s);
         assert_eq!(s, [1, 9, 2, 6, 5, 8, 3, 7, 4,]);
         assert_eq!(part1(&parsed), "67384529");
     }
