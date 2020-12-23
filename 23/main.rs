@@ -1,7 +1,6 @@
-use std::collections::VecDeque;
 use std::iter::*;
 
-type Parsed = VecDeque<i64>;
+type Parsed = Vec<i64>;
 type Answer = String;
 
 fn get_values(ll: &[i64]) -> Vec<i64> {
@@ -17,7 +16,7 @@ fn get_values(ll: &[i64]) -> Vec<i64> {
 
 fn rounds(cups: &Parsed, num: usize, total: usize) -> Vec<i64> {
     // Compute min/max
-    let mut get_next: Vec<i64> = vec![];
+    let mut get_next: Vec<i64> = Vec::with_capacity(total + 1);
     get_next.resize(total + 1, 0);
     for i in 0..cups.len() {
         get_next[cups[i] as usize] = cups[(i + 1) % cups.len()];
