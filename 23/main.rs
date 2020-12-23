@@ -6,9 +6,9 @@ type Answer = String;
 fn get_values(ll: &[i32]) -> Vec<i32> {
     let mut s = vec![1];
     s.reserve(ll.len());
-    let mut next = ll[1];
-    while next != 1 {
-        s.push(next);
+    let mut next = ll[0];
+    while next != 0 {
+        s.push(next + 1);
         next = ll[next as usize];
     }
     s
@@ -16,18 +16,18 @@ fn get_values(ll: &[i32]) -> Vec<i32> {
 
 fn find_next(node: i32, pickup: &[i32;3], total: usize) -> i32 {
     let mut next = node;
-    if next > 1 {
+    if next > 0 {
         next -= 1;
     } else {
-        next = total as i32;
+        next = total as i32 - 1;
     }
     'outer: loop {
         for c in pickup {
             if *c == next {
-                if next > 1 {
+                if next > 0 {
                     next -= 1;
                 } else {
-                    next = total as i32;
+                    next = total as i32 - 1;
                 }
                 continue 'outer;
             }
@@ -40,17 +40,17 @@ fn find_next(node: i32, pickup: &[i32;3], total: usize) -> i32 {
 fn rounds(cups: &Parsed, num: usize, total: usize) -> Vec<i32> {
     // Compute min/max
     let mut get_next: Vec<i32> = Vec::with_capacity(total + 1);
-    get_next.resize(total + 1, 0);
+    get_next.resize(total, 0);
     for i in 0..cups.len() {
-        get_next[cups[i] as usize] = cups[(i + 1) % cups.len()];
+        get_next[cups[i] as usize - 1] = cups[(i + 1) % cups.len()] - 1;
     }
     for i in cups.len()..total {
-        get_next[i] = (i + 1) as i32;
+        get_next[i - 1] = i as i32;
     }
     if total > cups.len() {
-        get_next[total] = cups[0];
+        get_next[total - 1] = cups[0] - 1;
     }
-    let mut node = cups[0];
+    let mut node = cups[0] - 1;
     for _i in 0..num {
         // Pick up three values to the right of current node
         let mut last_picked_up = get_next[node as usize];
@@ -89,9 +89,9 @@ fn part1(cups: &Parsed) -> Answer {
 
 fn part2(cups: &Parsed) -> i64 {
     let c = rounds(&cups, 10000000, 1000000);
-    let a = c[1];
+    let a = c[0];
     let b = c[a as usize];
-    a as i64 * b as i64
+    (a as i64 + 1) * (b as i64 + 1)
 }
 
 fn parse(lines: &[String]) -> Parsed {
