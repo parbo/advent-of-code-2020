@@ -14,29 +14,6 @@ fn get_values(ll: &[i32]) -> Vec<i32> {
     s
 }
 
-fn find_next(node: i32, pickup: &[i32;3], total: usize) -> i32 {
-    let mut next = node;
-    if next > 0 {
-        next -= 1;
-    } else {
-        next = total as i32 - 1;
-    }
-    'outer: loop {
-        for c in pickup {
-            if *c == next {
-                if next > 0 {
-                    next -= 1;
-                } else {
-                    next = total as i32 - 1;
-                }
-                continue 'outer;
-            }
-        }
-        break;
-    }
-    next
-}
-
 fn rounds(cups: &Parsed, num: usize, total: usize) -> Vec<i32> {
     // Compute min/max
     let mut get_next: Vec<i32> = Vec::with_capacity(total + 1);
@@ -63,7 +40,13 @@ fn rounds(cups: &Parsed, num: usize, total: usize) -> Vec<i32> {
         let remaining = get_next[last_picked_up as usize];
 
         // Find the next _value_
-	let next = find_next(node, &pickup, total);
+        let mut next = node;
+        loop {
+            next = (next - 1).rem_euclid(total as i32);
+            if !pickup.contains(&next) {
+                break;
+            }
+        }
 
         // insert the picked up items at next
         let old = get_next[next as usize];
