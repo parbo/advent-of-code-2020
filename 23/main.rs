@@ -4,128 +4,97 @@ use std::iter::*;
 type Parsed = VecDeque<i64>;
 type Answer = String;
 
-fn rounds(cups: &Parsed, num: usize, total: usize) -> Parsed {
+fn make_cups(cups: &Parsed, total: usize) -> Parsed {
     let mut cups = cups.clone();
     cups.reserve(total);
-    let min = *cups.iter().min().unwrap();
     let mut x = *cups.iter().max().unwrap() + 1;
     while cups.len() < total {
         cups.push_back(x);
         x += 1;
     }
-    // Compute new max
-    let max = *cups.iter().max().unwrap();
-    println!("{}, {}, {}", min, max, cups.len());
-    let mut rev_index = vec![];
-    rev_index.resize(total + 1, 0);
-    for (i, c) in cups.iter().enumerate() {
-        rev_index[*c as usize] = i;
-    }
-    for i in 0..num {
-        let mut next = cups[0] - 1;
-        if i % 10000 == 0 && cups.len() > 20 {
-            println!("round: {}", i);
-            println!("next: {}", next);
-            println!("> {:?}", cups.iter().take(20).collect::<Vec<_>>());
-            println!(
-                "< {:?}",
-                cups.iter().skip(cups.len() - 20).collect::<Vec<_>>()
-            );
-        }
-        cups.rotate_left(1);
-        let pickup = vec![cups[0], cups[1], cups[2]];
-	cups.drain(0..3);
-        let (mut ix, mix) = 'outer: loop {
-            if next < min {
-                next = max;
-            }
-            'next: loop {
-                for p in &pickup {
-                    if *p == next {
-                        next -= 1;
-                        if next < min {
-                            next = max;
-                        }
-                        continue 'next;
-                    }
-                }
-                break;
-            }
-            let mut maybe_ix = rev_index[next as usize];
-            if maybe_ix >= cups.len() {
-                maybe_ix = 0;
-            }
-            //	    println!("maybe ix: {}", maybe_ix);
-            let mut a = maybe_ix;
-            let mut b = maybe_ix;
-            loop {
-                let c = cups[a];
-                if c == next {
-                    break 'outer (a, maybe_ix);
-                }
-                let c = cups[b];
-                if c == next {
-                    break 'outer (b, maybe_ix);
-                }
-                if a + 1 < cups.len() {
-                    a += 1;
-                } else {
-                    a = 0;
-                }
-                if b > 0 {
-                    b -= 1;
-                } else {
-                    b = cups.len() - 1;
-                }
-                if a == maybe_ix || b == maybe_ix {
-                    break;
-                }
-            }
-            println!("{:?}, {}, {}, {}, {}", pickup, next, maybe_ix, a, b);
-            panic!();
-        };
-        let a = ix.max(mix) as i64;
-        let b = ix.min(mix) as i64;
-        let dist = (a - b).min(cups.len() as i64 - a + b);
-        if dist > 10000 {
-            // Rebuild the revi index
-            println!("rebuild {} {} {}", ix, mix, dist);
-            for (i, c) in cups.iter().enumerate() {
-                rev_index[*c as usize] = i;
-            }
-        }
-        //	println!("insert at {}", ix);
-        for p in pickup {
-            ix += 1;
-            cups.insert(ix, p);
-            rev_index[p as usize] = ix;
-        }
-    }
-    while cups[0] != 1 {
-        cups.rotate_left(1);
-    }
-    if cups.len() > 20 {
-        println!("> {:?}", cups.iter().take(20).collect::<Vec<_>>());
-        println!(
-            "< {:?}",
-            cups.iter().skip(cups.len() - 20).collect::<Vec<_>>()
-        );
-    }
     cups
 }
 
+fn get_values(ll: &[i64]) -> Vec<i64> {
+    let mut s = vec![1];
+    s.reserve(ll.len());
+    let mut next = ll[1];
+    while next != 1 {
+        s.push(next);
+        next = ll[next as usize];
+    }
+    s
+}
+
+fn rounds(cups: &Parsed, num: usize) -> Vec<i64> {
+    // Compute min/max
+    let total = cups.len();
+    let mut get_next = vec![];
+    get_next.resize(total + 1, 0);
+    for i in 0..cups.len() {
+        get_next[cups[i] as usize] = cups[((i + 1) % cups.len()) as usize];
+    }
+    let mut node = cups[0];
+    for _i in 0..num {
+        // Pick up three values to the right of current node
+        let mut last_picked_up = get_next[node as usize];
+        let mut pickup = [0; 3];
+        pickup[0] = last_picked_up;
+        last_picked_up = get_next[last_picked_up as usize];
+        pickup[1] = last_picked_up;
+        let last_picked_up = get_next[last_picked_up as usize];
+        pickup[2] = last_picked_up;
+        let remaining = get_next[last_picked_up as usize];
+
+        // Find the next _value_
+        let mut next = node as i64;
+        if next > 1 {
+            next -= 1;
+        } else {
+            next = total as i64;
+        }
+        'outer: loop {
+            for c in &pickup {
+                if *c == next {
+                    if next > 1 {
+                        next -= 1;
+                    } else {
+                        next = total as i64;
+                    }
+                    continue 'outer;
+                }
+            }
+            break;
+        }
+        // insert the picked up items at next
+        let old = get_next[next as usize];
+        get_next[next as usize] = get_next[node as usize];
+        get_next[last_picked_up as usize] = old;
+        // close the gap
+        get_next[node as usize] = remaining;
+        // Move cw
+        node = get_next[node as usize];
+    }
+    get_next
+}
+
 fn part1(cups: &Parsed) -> Answer {
-    let c = rounds(cups, 100, cups.len());
-    c.iter()
+    let all_cups = make_cups(cups, cups.len());
+    let c = rounds(&all_cups, 100);
+    get_values(&c)
+        .iter()
         .skip(1)
-        .map(|c| c.to_string())
+        .map(|x| x.to_string())
         .collect::<Vec<_>>()
         .join("")
 }
 
 fn part2(cups: &Parsed) -> i64 {
-    let c = rounds(cups, 10000000, 1000000);
-    c.into_iter().skip(1).take(2).product()
+    let all_cups = make_cups(cups, 1000000);
+    let c = rounds(&all_cups, 10000000);
+    let a = c[1];
+    let b = c[a as usize];
+    a * b
 }
 
 fn parse(lines: &[String]) -> Parsed {
@@ -155,10 +124,9 @@ mod tests {
     fn test_part1() {
         let input = vec!["389125467".to_string()];
         let parsed = parse(&input);
-        assert_eq!(
-            rounds(&parsed, 10, parsed.len()),
-            [1, 9, 2, 6, 5, 8, 3, 7, 4,]
-        );
+        let ll = rounds(&parsed, 10);
+        let s = get_values(&ll);
+        assert_eq!(s, [1, 9, 2, 6, 5, 8, 3, 7, 4,]);
         assert_eq!(part1(&parsed), "67384529");
     }
 }
