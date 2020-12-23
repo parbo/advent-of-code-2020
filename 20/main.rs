@@ -1,5 +1,6 @@
 use aoc::Grid;
 use aoc::GridDrawer;
+use aoc::GridTranspose;
 use std::collections::{HashMap, HashSet};
 use std::iter::*;
 
@@ -88,55 +89,39 @@ fn find_monsters(grid: &HashMap<aoc::Point, char>) -> Vec<aoc::Point> {
         "#    ##    ##    ###",
         " #  #  #  #  #  #   ",
     ];
-    for rotate in 0..4 {
-        for flip in 0..3 {
-            let mut coords = vec![];
-            let mut big_grid = grid.clone();
-            match flip {
-                0 => {}
-                1 => big_grid.flip_horizontal(),
-                2 => big_grid.flip_vertical(),
-                _ => panic!(),
-            }
-            match rotate {
-                0 => {}
-                1 => big_grid.rotate_90_cw(),
-                2 => big_grid.rotate_180_cw(),
-                3 => big_grid.rotate_270_cw(),
-                _ => panic!(),
-            }
-            let ([min_x, min_y], [max_x, max_y]) = big_grid.extents();
-            for y in min_y..=max_y {
-                'outer: for x in min_x..=max_x {
-                    let mut matches = 0;
-                    let mut monster_coords = vec![];
-                    for yy in 0..monster.len() {
-                        for (xx, mc) in monster[yy].chars().enumerate() {
-                            if mc == '#' {
-                                let xxx = x + xx as i64;
-                                let yyy = y + yy as i64;
-                                monster_coords.push([xxx, yyy]);
-                            }
+    for g in grid.transpositions() {
+        let ([min_x, min_y], [max_x, max_y]) = g.extents();
+	let mut coords = vec![];
+        for y in min_y..=max_y {
+            'outer: for x in min_x..=max_x {
+                let mut matches = 0;
+                let mut monster_coords = vec![];
+                for yy in 0..monster.len() {
+                    for (xx, mc) in monster[yy].chars().enumerate() {
+                        if mc == '#' {
+                            let xxx = x + xx as i64;
+                            let yyy = y + yy as i64;
+                            monster_coords.push([xxx, yyy]);
                         }
-                    }
-                    for gc in &monster_coords {
-                        if let Some(c) = big_grid.get_value(*gc) {
-                            if c == '#' {
-                                matches += 1;
-                            }
-                        } else {
-                            // Monster is outside the picture, skip this coord
-                            continue 'outer;
-                        }
-                    }
-                    if matches == 15 {
-                        coords.append(&mut monster_coords);
                     }
                 }
+                for gc in &monster_coords {
+                    if let Some(c) = g.get_value(*gc) {
+                        if c == '#' {
+                            matches += 1;
+                        }
+                    } else {
+                        // Monster is outside the picture, skip this coord
+                        continue 'outer;
+                    }
+                }
+                if matches == 15 {
+                    coords.append(&mut monster_coords);
+                }
             }
-            if coords.len() > 0 {
-                return coords;
-            }
+        }
+        if coords.len() > 0 {
+            return coords;
         }
     }
     vec![]
@@ -176,42 +161,26 @@ fn place(
             }
         }
         // Try to make it fit with the neighbors
-        for rot in 0..4 {
-            let mut gg = g.clone();
-            match rot {
-                0 => {}
-                1 => gg.rotate_90_cw(),
-                2 => gg.rotate_180_cw(),
-                3 => gg.rotate_270_cw(),
-                _ => panic!(),
-            }
-            'outer: for flip in 0..3 {
-                let mut ggg = gg.clone();
-                match flip {
-                    0 => {}
-                    1 => ggg.flip_horizontal(),
-                    2 => ggg.flip_vertical(),
-                    _ => panic!(),
-                }
-                for d in aoc::DIRECTIONS.clone() {
-                    let c = aoc::point_add(coord, d);
-                    if let Some((_id, g)) = grid_of_grids.get(&c) {
-                        let e = get_edge(&ggg, d);
-                        let other_e = match d {
-                            aoc::NORTH => get_edge(g, aoc::SOUTH),
-                            aoc::EAST => get_edge(g, aoc::WEST),
-                            aoc::SOUTH => get_edge(g, aoc::NORTH),
-                            aoc::WEST => get_edge(g, aoc::EAST),
-                            _ => panic!(),
-                        };
-                        if e != other_e {
-                            continue 'outer;
-                        }
+        let gg = g.clone();
+        'outer: for ggg in gg.transpositions() {
+            for d in aoc::DIRECTIONS.clone() {
+                let c = aoc::point_add(coord, d);
+                if let Some((_id, g)) = grid_of_grids.get(&c) {
+                    let e = get_edge(&ggg, d);
+                    let other_e = match d {
+                        aoc::NORTH => get_edge(g, aoc::SOUTH),
+                        aoc::EAST => get_edge(g, aoc::WEST),
+                        aoc::SOUTH => get_edge(g, aoc::NORTH),
+                        aoc::WEST => get_edge(g, aoc::EAST),
+                        _ => panic!(),
+                    };
+                    if e != other_e {
+                        continue 'outer;
                     }
                 }
-                // All existing dirs matched, we can place this here
-                candidates.push((id, ggg.clone()));
             }
+            // All existing dirs matched, we can place this here
+            candidates.push((id, ggg.clone()));
         }
     }
     if candidates.len() > 0 {

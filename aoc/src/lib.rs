@@ -412,6 +412,49 @@ impl Iterator for GridIteratorHelper {
     }
 }
 
+pub struct GridFlipIteratorHelper<G, T>
+where
+    G: Grid<T> + Clone,
+    T: PartialEq + Copy,
+{
+    rot: usize,
+    flip: bool,
+    phantom: PhantomData<T>,
+    grid: G,
+}
+
+impl<G, T> Iterator for GridFlipIteratorHelper<G, T>
+where
+    G: Grid<T> + Clone,
+    T: PartialEq + Copy,
+{
+    type Item = G;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.rot > 3 {
+            return None;
+        }
+        let mut g = self.grid.clone();
+        match self.rot {
+            0 => {}
+            1 => g.rotate_90_cw(),
+            2 => g.rotate_180_cw(),
+            3 => g.rotate_270_cw(),
+            _ => panic!(),
+        }
+        if self.flip {
+            g.flip_horizontal();
+        }
+        if !self.flip {
+            self.flip = true;
+        } else {
+            self.flip = false;
+            self.rot += 1;
+        }
+        Some(g)
+    }
+}
+
 pub trait Grid<T>
 where
     T: PartialEq + Copy,
@@ -493,6 +536,41 @@ where
                     self.set_value([xxx, yyy], v);
                 }
             }
+        }
+    }
+}
+
+pub trait GridTranspose<G, T>
+where
+    Self: Grid<T> + Clone + Sized,
+    T: PartialEq + Copy,
+{
+    // Note: consumes self
+    fn into_transpositions(self) -> GridFlipIteratorHelper<Self, T>;
+    fn transpositions(&self) -> GridFlipIteratorHelper<Self, T>;
+}
+
+impl<G, T> GridTranspose<G, T> for G
+where
+    G: Grid<T> + Clone + Sized,
+    T: PartialEq + Copy,
+{
+    fn into_transpositions(self) -> GridFlipIteratorHelper<Self, T> {
+        let grid = self;
+        GridFlipIteratorHelper {
+            rot: 0,
+            flip: false,
+            phantom: PhantomData,
+            grid,
+        }
+    }
+    fn transpositions(&self) -> GridFlipIteratorHelper<Self, T> {
+        let grid = self.clone();
+        GridFlipIteratorHelper {
+            rot: 0,
+            flip: false,
+            phantom: PhantomData,
+            grid,
         }
     }
 }
