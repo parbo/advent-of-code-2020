@@ -42,7 +42,7 @@ fn rounds(cups: &Parsed, num: usize) -> Vec<i64> {
         pickup[0] = last_picked_up;
         last_picked_up = get_next[last_picked_up as usize];
         pickup[1] = last_picked_up;
-        let last_picked_up = get_next[last_picked_up as usize];
+        last_picked_up = get_next[last_picked_up as usize];
         pickup[2] = last_picked_up;
         let remaining = get_next[last_picked_up as usize];
 
