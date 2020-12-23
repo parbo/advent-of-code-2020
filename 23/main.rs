@@ -15,7 +15,6 @@ fn get_values(ll: &[i32]) -> Vec<i32> {
 }
 
 fn rounds(cups: &Parsed, num: usize, total: usize) -> Vec<i32> {
-    // Compute min/max
     let mut get_next: Vec<i32> = Vec::with_capacity(total + 1);
     get_next.resize(total, 0);
     for i in 0..cups.len() {
