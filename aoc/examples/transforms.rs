@@ -1,6 +1,7 @@
 use aoc;
 use aoc::Grid;
 use aoc::GridDrawer;
+use aoc::GridTranspose;
 use std::collections::HashMap;
 
 fn make_grid() -> Vec<String> {
@@ -147,6 +148,15 @@ fn blit() {
     gd.draw(&grid);
 }
 
+fn transpose_iterator() {
+    let orig_grid = aoc::parse_grid(&make_grid());
+    let mut gd = aoc::PrintGridDrawer::new(|x| x);
+    for g in orig_grid.transpositions() {
+	gd.draw(&g);
+	println!();
+    }
+}
+
 fn main() {
     println!("== Regular grid ==");
     transform();
@@ -156,4 +166,7 @@ fn main() {
     println!();
     println!("== Blitting ==");
     blit();
+    println!();
+    println!("== Iterator over all transpositions ==");
+    transpose_iterator();
 }
