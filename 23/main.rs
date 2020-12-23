@@ -1,9 +1,9 @@
 use std::iter::*;
 
-type Parsed = Vec<i64>;
+type Parsed = Vec<i32>;
 type Answer = String;
 
-fn get_values(ll: &[i64]) -> Vec<i64> {
+fn get_values(ll: &[i32]) -> Vec<i32> {
     let mut s = vec![1];
     s.reserve(ll.len());
     let mut next = ll[1];
@@ -14,15 +14,15 @@ fn get_values(ll: &[i64]) -> Vec<i64> {
     s
 }
 
-fn rounds(cups: &Parsed, num: usize, total: usize) -> Vec<i64> {
+fn rounds(cups: &Parsed, num: usize, total: usize) -> Vec<i32> {
     // Compute min/max
-    let mut get_next: Vec<i64> = Vec::with_capacity(total + 1);
+    let mut get_next: Vec<i32> = Vec::with_capacity(total + 1);
     get_next.resize(total + 1, 0);
     for i in 0..cups.len() {
         get_next[cups[i] as usize] = cups[(i + 1) % cups.len()];
     }
     for i in cups.len()..total {
-        get_next[i] = (i + 1) as i64;
+        get_next[i] = (i + 1) as i32;
     }
     if total > cups.len() {
         get_next[total] = cups[0];
@@ -40,11 +40,11 @@ fn rounds(cups: &Parsed, num: usize, total: usize) -> Vec<i64> {
         let remaining = get_next[last_picked_up as usize];
 
         // Find the next _value_
-        let mut next = node as i64;
+        let mut next = node as i32;
         if next > 1 {
             next -= 1;
         } else {
-            next = total as i64;
+            next = total as i32;
         }
         'outer: loop {
             for c in &pickup {
@@ -52,7 +52,7 @@ fn rounds(cups: &Parsed, num: usize, total: usize) -> Vec<i64> {
                     if next > 1 {
                         next -= 1;
                     } else {
-                        next = total as i64;
+                        next = total as i32;
                     }
                     continue 'outer;
                 }
@@ -81,7 +81,7 @@ fn part1(cups: &Parsed) -> Answer {
         .join("")
 }
 
-fn part2(cups: &Parsed) -> i64 {
+fn part2(cups: &Parsed) -> i32 {
     let c = rounds(&cups, 10000000, 1000000);
     let a = c[1];
     let b = c[a as usize];
@@ -91,7 +91,7 @@ fn part2(cups: &Parsed) -> i64 {
 fn parse(lines: &[String]) -> Parsed {
     lines[0]
         .chars()
-        .map(|x| x.to_digit(10).unwrap() as i64)
+        .map(|x| x.to_digit(10).unwrap() as i32)
         .collect()
 }
 
