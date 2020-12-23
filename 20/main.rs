@@ -161,8 +161,7 @@ fn place(
             }
         }
         // Try to make it fit with the neighbors
-        let gg = g.clone();
-        'outer: for ggg in gg.transpositions() {
+        'outer: for ggg in g.transpositions() {
             for d in aoc::DIRECTIONS.clone() {
                 let c = aoc::point_add(coord, d);
                 if let Some((_id, g)) = grid_of_grids.get(&c) {
