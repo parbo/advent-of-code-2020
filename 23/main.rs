@@ -15,6 +15,7 @@ fn get_values(ll: &[i32]) -> Vec<i32> {
 }
 
 fn rounds(cups: &Parsed, num: usize, total: usize) -> Vec<i32> {
+    // Make a "linked list" of sorts, where get_next[x] for a value x gives the value clockwise from x
     let mut get_next: Vec<i32> = Vec::with_capacity(total + 1);
     get_next.resize(total, 0);
     for i in 0..cups.len() {
@@ -28,7 +29,7 @@ fn rounds(cups: &Parsed, num: usize, total: usize) -> Vec<i32> {
     }
     let mut node = cups[0] - 1;
     for _i in 0..num {
-        // Pick up three values to the right of current node
+        // Pick up three values clockwise from current node
         let mut last_picked_up = get_next[node as usize];
         let mut pickup = [0; 3];
         pickup[0] = last_picked_up;
@@ -47,13 +48,13 @@ fn rounds(cups: &Parsed, num: usize, total: usize) -> Vec<i32> {
             }
         }
 
-        // insert the picked up items at next
+        // Insert the picked up items at next
         let old = get_next[next as usize];
         get_next[next as usize] = get_next[node as usize];
         get_next[last_picked_up as usize] = old;
-        // close the gap
+        // Close the gap
         get_next[node as usize] = remaining;
-        // Move cw
+        // Move clockwise
         node = remaining;
     }
     get_next
