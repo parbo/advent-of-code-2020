@@ -92,9 +92,10 @@ fn part2(paths: &Parsed) -> Answer {
         let mut coord = [0, 0, 0];
         for d in path {
             coord = aoc::vec_add(coord, *d);
+            g.insert(coord, '+');
         }
         let col = g.entry(coord).or_insert('.');
-        if *col == '.' {
+        if *col != 'B' {
             *col = 'B';
         } else {
             *col = '.';
@@ -121,8 +122,8 @@ fn part2(paths: &Parsed) -> Answer {
                         }
                     }
                     if *c == 'B' && (black == 0 || black > 2) {
-                        newg.remove(&p);
-                    } else if *c == '.' && black == 2 {
+                        newg.insert(p, '.');
+                    } else if *c != 'B' && black == 2 {
                         newg.insert(p, 'B');
                     }
                 }
