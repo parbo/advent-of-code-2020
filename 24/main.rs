@@ -19,12 +19,12 @@ fn init(paths: &Parsed) -> HashMap<Vec3, char> {
         for d in path {
             coord = aoc::vec_add(coord, *d);
         }
-	let col = g.entry(coord).or_insert('.');
-	if *col == '.' {
-	    *col = 'B';
-	} else {
-	    *col = '.';
-	}
+        let col = g.entry(coord).or_insert('.');
+        if *col == '.' {
+            *col = 'B';
+        } else {
+            *col = '.';
+        }
     }
     g
 }
@@ -44,6 +44,47 @@ fn extents(g: &HashMap<Vec3, char>) -> (Vec3, Vec3) {
     ([min_x, min_y, min_z], [max_x, max_y, max_z])
 }
 
+fn cube_to_oddr(cube: Vec3) -> aoc::Point {
+    let col = 2 * cube[0] + (cube[2] - (cube[2].rem_euclid(2)));
+    let row = cube[2];
+    [col, row]
+}
+
+fn draw(gg: &HashMap<Vec3, char>) {
+    let mut g = HashMap::new();
+    for (p, v) in gg {
+        g.insert(cube_to_oddr(*p), *v);
+    }
+    println!("=============================================");
+    let min_x = g.iter().map(|(p, _v)| p[0]).min().unwrap();
+    let min_y = g.iter().map(|(p, _v)| p[1]).min().unwrap();
+    let max_x = g.iter().map(|(p, _v)| p[0]).max().unwrap();
+    let max_y = g.iter().map(|(p, _v)| p[1]).max().unwrap();
+    for y in min_y..=max_y {
+        if y.rem_euclid(2) == 0 {
+            for _ in min_x..=max_x {
+                print!("\\/");
+            }
+            println!();
+        }
+        if y.rem_euclid(2) == 0 {
+            print!(" ");
+        }
+        for x in min_x..=max_x {
+            let p = [x, y];
+            let c = g.get(&p).unwrap_or(&'.');
+            print!("|{}", c);
+        }
+        if y.rem_euclid(2) == 0 {
+            println!();
+            for _ in min_x..=max_x {
+                print!("/\\");
+            }
+        }
+        println!();
+    }
+}
+
 fn part2(paths: &Parsed) -> Answer {
     let mut g = HashMap::new();
     // init tiles to white
@@ -52,14 +93,15 @@ fn part2(paths: &Parsed) -> Answer {
         for d in path {
             coord = aoc::vec_add(coord, *d);
         }
-	let col = g.entry(coord).or_insert('.');
-	if *col == '.' {
-	    *col = 'B';
-	} else {
-	    *col = '.';
-	}
+        let col = g.entry(coord).or_insert('.');
+        if *col == '.' {
+            *col = 'B';
+        } else {
+            *col = '.';
+        }
     }
-    let d =  [HEX_E, HEX_W, HEX_SW, HEX_SE, HEX_NW, HEX_NE];
+    let mut all_grid = vec![g.clone()];
+    let d = [HEX_E, HEX_W, HEX_SW, HEX_SE, HEX_NW, HEX_NE];
     for _ in 0..100 {
         let mut newg = g.clone();
         let ([min_x, min_y, min_z], [max_x, max_y, max_z]) = extents(&newg);
@@ -86,7 +128,120 @@ fn part2(paths: &Parsed) -> Answer {
                 }
             }
         }
-	g = newg.clone();
+        g = newg.clone();
+        all_grid.push(g.clone());
+    }
+    // Draw all the grids, using the same coord system
+    let mut min_xx = 0;
+    let mut min_yy = 0;
+    let mut min_zz = 0;
+    let mut max_xx = 0;
+    let mut max_yy = 0;
+    let mut max_zz = 0;
+    for gg in &all_grid {
+        let ([min_x, min_y, min_z], [max_x, max_y, max_z]) = extents(&gg);
+        min_xx = min_xx.min(min_x);
+        min_yy = min_yy.min(min_y);
+        min_zz = min_zz.min(min_z);
+        max_xx = max_xx.max(max_x);
+        max_yy = max_yy.max(max_y);
+        max_zz = max_zz.max(max_z);
+    }
+    for gg in &mut all_grid {
+        // Insert the min/max corners in all grids
+        gg.insert([min_xx, min_yy, min_zz], '.');
+        gg.insert([max_xx, max_yy, max_zz], '.');
+    }
+    let window = aoc::initscr();
+    aoc::nl();
+    aoc::noecho();
+    aoc::curs_set(0);
+    window.keypad(true);
+    window.scrollok(true);
+    window.nodelay(true);
+    for gg in &all_grid {
+        window.clear();
+        let mut g = HashMap::new();
+        // Convert coords
+        for (p, v) in gg {
+            g.insert(cube_to_oddr(*p), *v);
+        }
+        let min_x = g.iter().map(|(p, _v)| p[0]).min().unwrap() as i32;
+        let min_y = g.iter().map(|(p, _v)| p[1]).min().unwrap() as i32;
+        let max_x = g.iter().map(|(p, _v)| p[0]).max().unwrap() as i32;
+        let max_y = g.iter().map(|(p, _v)| p[1]).max().unwrap() as i32;
+	// two rows per row in the output
+        let w = 2 * (max_x - min_x);
+        let h = 2 * (max_y - min_y);
+        let ww = window.get_max_x();
+        let wh = window.get_max_y();
+        let offs_x = (ww - w) / 2;
+        let offs_y = (wh - h) / 2;
+        let mut yy = offs_y;
+        let mut xx = offs_x;
+        for y in min_y..=max_y {
+            if y.rem_euclid(2) == 0 {
+                for _ in min_x..=max_x {
+                    if yy >= 0 && yy < wh {
+                        if xx >= 0 && xx < ww {
+                            window.mvaddch(yy, xx, '\\');
+                        }
+                        if xx + 1 >= 0 && xx + 1 < ww {
+                            window.mvaddch(yy, xx + 1, '/');
+                        }
+                    }
+                    xx += 2;
+                }
+                yy += 1;
+                xx = offs_x;
+            }
+            if y.rem_euclid(2) == 0 {
+                if xx >= 0 && xx < ww && yy >= 0 && yy < wh {
+                    window.mvaddch(yy, xx, ' ');
+                }
+                xx += 1;
+            }
+            for x in min_x..=max_x {
+                if yy >= 0 && y < wh {
+                    let p = [x as i64, y as i64];
+                    let c = g.get(&p).unwrap_or(&'.');
+                    if xx >= 0 && x < ww {
+                        window.mvaddch(yy, xx, '|');
+                    }
+                    if xx + 1 >= 0 && x + 1 < ww {
+                        window.mvaddch(yy, xx + 1, *c);
+                    }
+                }
+                xx += 2;
+            }
+            if y.rem_euclid(2) == 0 {
+                yy += 1;
+                xx = offs_x;
+                for _ in min_x..=max_x {
+                    if yy >= 0 && yy < wh {
+                        if xx >= 0 && xx < ww {
+                            window.mvaddch(yy, xx + 1, '/');
+                        }
+                        if xx + 1 >= 0 && xx + 1 < ww {
+                            window.mvaddch(yy, xx, '\\');
+                        }
+                    }
+                    xx += 2;
+                }
+            }
+            yy += 1;
+            xx = offs_x;
+            if yy > window.get_max_y() {
+                break;
+            }
+        }
+        if let Some(aoc::Input::Character(c)) = window.getch() {
+            if c == 'q' {
+                aoc::endwin();
+                std::process::exit(0);
+            }
+        }
+        window.refresh();
     }
     g.iter().filter(|(_coord, c)| **c == 'B').count()
 }
