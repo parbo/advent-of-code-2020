@@ -880,7 +880,7 @@ where
         BitmapGridDrawer {
             sprite_dimension,
             to_sprite,
-            frame: 1,
+            frame: 0,
             basename: basename.into(),
             rect: None,
             image: None,
