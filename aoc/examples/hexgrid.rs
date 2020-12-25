@@ -1,4 +1,5 @@
 use aoc;
+use aoc::HexGrid;
 use aoc::HexGridDrawer;
 use std::collections::HashMap;
 
@@ -16,8 +17,7 @@ fn print_char() {
         }
     }
     let mut gd = aoc::PrintHexGridDrawer::new(|x| x);
-    gd.draw(&grid);
-    let mut gd = aoc::BitmapHexGridDrawer::new(|x| match x {
+    let mut gdb = aoc::BitmapHexGridDrawer::new(|x| match x {
         'A' => (0xFF, 0x0, 0x0),
         'B' => (0xFF, 0x40, 0x0),
         'C' => (0xFF, 0x80, 0x0),
@@ -45,7 +45,70 @@ fn print_char() {
         'Y' => (0x20, 0x20, 0x20),
         _ => (0x0, 0x0, 0x0),
     }, "ppm/examples/hexgrid");
+
     gd.draw(&grid);
+    gdb.draw(&grid);
+    println!();
+
+    let mut gg = grid.clone();
+    gg.flip_horizontal();
+    gd.draw(&gg);
+    gdb.draw(&gg);
+    println!();
+
+    let mut gg = grid.clone();
+    gg.flip_vertical();
+    gd.draw(&gg);
+    gdb.draw(&gg);
+    println!();
+
+    let mut gg = grid.clone();
+    gg.flip_x();
+    gd.draw(&gg);
+    gdb.draw(&gg);
+    println!();
+
+    let mut gg = grid.clone();
+    gg.flip_y();
+    gd.draw(&gg);
+    gdb.draw(&gg);
+    println!();
+
+    let mut gg = grid.clone();
+    gg.flip_z();
+    gd.draw(&gg);
+    gdb.draw(&gg);
+    println!();
+
+    let mut gg = grid.clone();
+    gg.rotate_60_cw();
+    gd.draw(&gg);
+    gdb.draw(&gg);
+    println!();
+
+    let mut gg = grid.clone();
+    gg.rotate_120_cw();
+    gd.draw(&gg);
+    gdb.draw(&gg);
+    println!();
+
+    let mut gg = grid.clone();
+    gg.rotate_180_cw();
+    gd.draw(&gg);
+    gdb.draw(&gg);
+    println!();
+
+    let mut gg = grid.clone();
+    gg.rotate_240_cw();
+    gd.draw(&gg);
+    gdb.draw(&gg);
+    println!();
+
+    let mut gg = grid.clone();
+    gg.rotate_300_cw();
+    gd.draw(&gg);
+    gdb.draw(&gg);
+    println!();
 }
 
 fn main() {
