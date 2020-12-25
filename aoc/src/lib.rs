@@ -1676,7 +1676,7 @@ where
         hex.set_value([1, 6], (180, 180, 180));
         hex.set_value([5, 6], (180, 180, 180));
         hex.set_value([2, 6], (180, 180, 180));
-        hex.set_value([4, 7], (180, 180, 180));
+        hex.set_value([4, 6], (180, 180, 180));
         hex.set_value([3, 7], (180, 180, 180));
         BitmapHexGridDrawer {
             to_color,
