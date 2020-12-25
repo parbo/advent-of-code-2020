@@ -109,92 +109,23 @@ fn part2(paths: &Parsed, draw: bool) -> Answer {
             gg.insert(aoc::axial_to_cube([min_qq, min_rr]), '.');
             gg.insert(aoc::axial_to_cube([max_qq, max_rr]), '.');
         }
-        // let mut gd = aoc::BitmapGridDrawer::new(
-        //     (1, 1),
-        //     |x| {
-        //         if x == 'B' {
-        //             vec![(0, 0, 0)]
-        //         } else if x == '+' {
-        //             vec![(200, 20, 20)]
-        //         } else if x == '-' {
-        //             vec![(100, 240, 100)]
-        //         } else if x == '*' {
-        //             vec![(70, 70, 70)]
-        //         } else {
-        //             vec![(255, 255, 255)]
-        //         }
-        //     },
-        //     "ppm/day24/part2",
-        // );
+        let mut gd = aoc::BitmapHexGridDrawer::new(
+            |x| {
+                if x == 'B' {
+                    (0, 0, 0)
+                } else if x == '+' {
+                    (200, 20, 20)
+                } else if x == '*' {
+                    (70, 70, 70)
+                } else {
+                    (255, 255, 255)
+                }
+            },
+            "ppm/day24/part2",
+        );
         let mut gdc = aoc::CursesHexGridDrawer::new(|c| c);
         for gg in &all_grid {
-            //     let mut g = HashMap::new();
-            //     // Convert coords
-            //     for (p, v) in gg {
-            //         g.insert(aoc::cube_to_oddr(*p), *v);
-            //     }
-            //     // Not sure about the scaling here..
-            //     let min_x = 2 * g.iter().map(|(p, _v)| p[0]).min().unwrap_or(0) as i32 / 3;
-            //     let min_y = g.iter().map(|(p, _v)| p[1]).min().unwrap_or(0) as i32;
-            //     let max_x = 2 * g.iter().map(|(p, _v)| p[0]).max().unwrap_or(0) as i32 / 3;
-            //     let max_y = g.iter().map(|(p, _v)| p[1]).max().unwrap_or(0) as i32;
-            //     let mut mg = vec![];
-            //     // First, make bitmaps
-            //     let bw = 6 * (max_x - min_x + 1);
-            //     let bh = 6 * (max_y - min_y + 1);
-            //     for _y in 0..bh {
-            //         let mut v = vec![];
-            //         v.resize(bw as usize, '.');
-            //         mg.push(v)
-            //     }
-            //     // Make a hexagon
-            //     let mut hex = vec![vec!['.'; 7]; 10];
-            //     hex.set_value([3, 0], '-');
-            //     hex.set_value([2, 1], '-');
-            //     hex.set_value([4, 1], '-');
-            //     hex.set_value([1, 2], '-');
-            //     hex.set_value([5, 2], '-');
-            //     hex.set_value([0, 3], '-');
-            //     hex.set_value([6, 3], '-');
-            //     hex.set_value([0, 4], '-');
-            //     hex.set_value([6, 4], '-');
-            //     hex.set_value([0, 5], '-');
-            //     hex.set_value([6, 5], '-');
-            //     hex.set_value([0, 6], '-');
-            //     hex.set_value([6, 6], '-');
-            //     hex.set_value([1, 7], '-');
-            //     hex.set_value([5, 7], '-');
-            //     hex.set_value([2, 8], '-');
-            //     hex.set_value([4, 8], '-');
-            //     hex.set_value([3, 9], '-');
-            //     for y in min_y..=max_y {
-            //         let (xoffs, yoffs) = if y.rem_euclid(2) == 0 { (3, 0) } else { (0, 0) };
-            //         for x in min_x..=max_x {
-            //             mg.blit(
-            //                 [
-            //                     ((x - min_x) * 6 + xoffs) as i64,
-            //                     ((y - min_y) * 6 + yoffs) as i64,
-            //                 ],
-            //                 &hex,
-            //             );
-            //         }
-            //     }
-            //     // fill them in
-            //     for y in min_y..=max_y {
-            //         let (xoffs, yoffs) = if y.rem_euclid(2) == 0 { (3, 0) } else { (0, 0) };
-            //         for x in min_x..=max_x {
-            //             let p = [x as i64, y as i64];
-            //             let c = g.get(&p).unwrap_or(&'.');
-            //             mg.fill(
-            //                 [
-            //                     ((x - min_x) * 6 + xoffs + 3) as i64,
-            //                     ((y - min_y) * 6 + yoffs + 5) as i64,
-            //                 ],
-            //                 *c,
-            //             );
-            //         }
-            //     }
-            //     gd.draw(&mg);
+            gd.draw(gg);
             gdc.draw(gg);
         }
     }

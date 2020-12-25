@@ -20,6 +20,7 @@ extern crate vecmath;
 pub use itertools::Itertools;
 pub use mod_exp::mod_exp;
 pub use num::integer::*;
+pub use pancurses::*;
 pub use petgraph::algo;
 pub use petgraph::graph::Graph;
 pub use petgraph::graph::UnGraph;
@@ -30,7 +31,6 @@ pub use petgraph::*;
 pub use regex::Regex;
 pub use serde_scan::from_str;
 pub use serde_scan::scan;
-pub use pancurses::*;
 
 pub type Point = self::vecmath::Vector2<i64>;
 pub type FPoint = self::vecmath::Vector2<f64>;
@@ -109,9 +109,11 @@ pub const HEX_SW: Vec3 = [-1, 0, 1];
 pub const HEX_NW: Vec3 = [0, 1, -1];
 pub const HEX_NE: Vec3 = [1, 0, -1];
 
-pub const DIRECTIONS : [Point;4] = [NORTH, EAST, SOUTH, WEST];
-pub const DIRECTIONS_INCL_DIAGONALS : [Point;8]  = [NORTH, NORTH_EAST, EAST, SOUTH_EAST, SOUTH, SOUTH_WEST, WEST, NORTH_WEST];
-pub const HEX_DIRECTIONS : [Vec3;6]  = [HEX_E, HEX_W, HEX_SW, HEX_SE, HEX_NW, HEX_NE];
+pub const DIRECTIONS: [Point; 4] = [NORTH, EAST, SOUTH, WEST];
+pub const DIRECTIONS_INCL_DIAGONALS: [Point; 8] = [
+    NORTH, NORTH_EAST, EAST, SOUTH_EAST, SOUTH, SOUTH_WEST, WEST, NORTH_WEST,
+];
+pub const HEX_DIRECTIONS: [Vec3; 6] = [HEX_E, HEX_W, HEX_SW, HEX_SE, HEX_NW, HEX_NE];
 
 lazy_static! {
     pub static ref DIRECTION_MAP: HashMap<&'static str, Point> = {
@@ -1142,10 +1144,26 @@ where
         *self.entry(pos).or_insert(value) = value;
     }
     fn extents(&self) -> (Point, Point) {
-        let min_q = self.iter().map(|(p, _v)| cube_to_axial(*p)[0]).min().unwrap_or(0);
-        let min_r = self.iter().map(|(p, _v)| cube_to_axial(*p)[1]).min().unwrap_or(0);
-        let max_q = self.iter().map(|(p, _v)| cube_to_axial(*p)[0]).max().unwrap_or(0);
-        let max_r = self.iter().map(|(p, _v)| cube_to_axial(*p)[1]).max().unwrap_or(0);
+        let min_q = self
+            .iter()
+            .map(|(p, _v)| cube_to_axial(*p)[0])
+            .min()
+            .unwrap_or(0);
+        let min_r = self
+            .iter()
+            .map(|(p, _v)| cube_to_axial(*p)[1])
+            .min()
+            .unwrap_or(0);
+        let max_q = self
+            .iter()
+            .map(|(p, _v)| cube_to_axial(*p)[0])
+            .max()
+            .unwrap_or(0);
+        let max_r = self
+            .iter()
+            .map(|(p, _v)| cube_to_axial(*p)[1])
+            .max()
+            .unwrap_or(0);
         ([min_q, min_r], [max_q, max_r])
     }
 }
@@ -1184,14 +1202,14 @@ where
     fn draw(&mut self, area: &G);
     // Convert to offset coordinate based sparse grid for printing
     fn convert(&self, g: &G) -> HashMap<Point, T> {
-	let mut gg : HashMap<Point, T> = HashMap::new();
+        let mut gg: HashMap<Point, T> = HashMap::new();
         // Convert coords
         for p in g.points() {
-	    if let Some(v) = g.get_value(p) {
-		gg.set_value(cube_to_oddr(p), v);
-	    }
+            if let Some(v) = g.get_value(p) {
+                gg.set_value(cube_to_oddr(p), v);
+            }
         }
-	gg
+        gg
     }
 }
 
@@ -1226,11 +1244,11 @@ where
 
     fn to_char(&self, col: T) -> char {
         let ch = (self.to_ch)(col);
-	if ch == char::default() {
-	    ' '
-	} else {
-	    ch
-	}
+        if ch == char::default() {
+            ' '
+        } else {
+            ch
+        }
     }
 }
 
@@ -1245,32 +1263,32 @@ where
         let ([min_x, min_y], [max_x, max_y]) = g.extents();
         for y in min_y..=max_y {
             if y.rem_euclid(2) == 0 {
-		print!(" ");
+                print!(" ");
                 for _ in min_x..=max_x {
                     print!("\\ / ");
                 }
                 print!("\\");
-		println!();
+                println!();
             }
             if y.rem_euclid(2) == 0 {
                 print!("  ");
-	    }
+            }
             for x in min_x..=max_x {
                 let p = [x as i64, y as i64];
-		let d = T::default();
+                let d = T::default();
                 let c = g.get(&p).unwrap_or(&d);
-		print!("| {} ", self.to_char(*c));
+                print!("| {} ", self.to_char(*c));
             }
-	    print!("|");
+            print!("|");
             if y.rem_euclid(2) == 0 {
-		println!();
-		print!(" ");
+                println!();
+                print!(" ");
                 for _ in min_x..=max_x {
                     print!("/ \\ ");
                 }
                 print!("/");
             }
-	    println!();
+            println!();
         }
     }
 }
@@ -1302,30 +1320,30 @@ where
             window,
             to_ch,
             phantom: PhantomData,
-	    w: 0,
-	    h: 0,
+            w: 0,
+            h: 0,
         }
     }
 
     fn to_char(&self, col: T) -> char {
         let ch = (self.to_ch)(col);
-	if ch == char::default() {
-	    ' '
-	} else {
-	    ch
-	}
+        if ch == char::default() {
+            ' '
+        } else {
+            ch
+        }
     }
 
     fn put(&self, x: i32, y: i32, c: char) {
-	if x >= 0 && x < self.w && y >= 0 && y < self.h && c != ' ' {
-	    self.window.mvaddch(y, x, c);
-	}
+        if x >= 0 && x < self.w && y >= 0 && y < self.h && c != ' ' {
+            self.window.mvaddch(y, x, c);
+        }
     }
     fn put_str(&self, x: i32, y: i32, s: &str) {
-	for (ii, c) in s.chars().enumerate() {
-	    let i = ii as i32;
-	    self.put(x + i, y, c);
-	}
+        for (ii, c) in s.chars().enumerate() {
+            let i = ii as i32;
+            self.put(x + i, y, c);
+        }
     }
 }
 
@@ -1348,57 +1366,57 @@ where
         self.window.clear();
         let g = self.convert(area);
         let ([min_x, min_y], [max_x, max_y]) = g.extents();
-	self.w = self.window.get_max_x();
-	self.h = self.window.get_max_y();
-	let ww = (4 * (max_x - min_x + 1) + 3) as i32;
-	let hh = (2 * (max_y - min_y + 1)) as i32;
-	let xoffs = (self.w - ww) / 2;
-	let yoffs = (self.h - hh) / 2;
-	let mut xx = xoffs as i32;
-	let mut yy = yoffs as i32;
+        self.w = self.window.get_max_x();
+        self.h = self.window.get_max_y();
+        let ww = (4 * (max_x - min_x + 1) + 3) as i32;
+        let hh = (2 * (max_y - min_y + 1)) as i32;
+        let xoffs = (self.w - ww) / 2;
+        let yoffs = (self.h - hh) / 2;
+        let mut xx = xoffs as i32;
+        let mut yy = yoffs as i32;
         for y in min_y..=max_y {
             if y.rem_euclid(2) == 0 {
-		self.put(xx, yy, ' ');
-		xx += 1;
+                self.put(xx, yy, ' ');
+                xx += 1;
                 for _ in min_x..=max_x {
-		    self.put_str(xx, yy, "\\ / ");
-		    xx += 4;
+                    self.put_str(xx, yy, "\\ / ");
+                    xx += 4;
                 }
-		self.put(xx, yy, '\\');
-		xx = xoffs;
-		yy += 1;
+                self.put(xx, yy, '\\');
+                xx = xoffs;
+                yy += 1;
             }
             if y.rem_euclid(2) == 0 {
-		self.put_str(xx, yy, "  ");
-		xx += 2;
-	    }
+                self.put_str(xx, yy, "  ");
+                xx += 2;
+            }
             for x in min_x..=max_x {
                 let p = [x as i64, y as i64];
-		let d = T::default();
+                let d = T::default();
                 let c = g.get(&p).unwrap_or(&d);
-		let s = format!("| {} ", self.to_char(*c));
-		self.put_str(xx, yy, &s);
-		xx += s.len() as i32;
+                let s = format!("| {} ", self.to_char(*c));
+                self.put_str(xx, yy, &s);
+                xx += s.len() as i32;
             }
-	    self.put(xx, yy, '|');
-	    // xx += 1;
+            self.put(xx, yy, '|');
+            // xx += 1;
             if y.rem_euclid(2) == 0 {
-		xx = xoffs;
-		yy += 1;
-		self.put(xx, yy, ' ');
-		xx += 1;
+                xx = xoffs;
+                yy += 1;
+                self.put(xx, yy, ' ');
+                xx += 1;
                 for _ in min_x..=max_x {
-		    self.put_str(xx, yy, "/ \\ ");
-		    xx += 4;
-		}
-		self.put(xx, yy, '/');
-		// xx += 1;
+                    self.put_str(xx, yy, "/ \\ ");
+                    xx += 4;
+                }
+                self.put(xx, yy, '/');
+                // xx += 1;
             }
-	    xx = xoffs;
-	    yy += 1;
-	    if yy > self.h {
-		break;
-	    }
+            xx = xoffs;
+            yy += 1;
+            if yy > self.h {
+                break;
+            }
         }
         if let Some(pancurses::Input::Character(c)) = self.window.getch() {
             if c == 'q' {
@@ -1407,6 +1425,164 @@ where
             }
         }
         self.window.refresh();
+    }
+}
+
+pub struct BitmapHexGridDrawer<F, G, T>
+where
+    F: Fn(T) -> (u8, u8, u8),
+    G: HexGrid<T>,
+    T: PartialEq + Copy,
+{
+    to_color: F,
+    basename: String,
+    frame: usize,
+    image: Option<RgbImage>,
+    hexagon: Vec<Vec<(u8, u8, u8)>>,
+    phantom: PhantomData<T>,
+    phantom_g: PhantomData<G>,
+}
+
+// These can be converted to movies with:
+// ffmpeg -framerate 25 -i "basename_%06d.png" output
+// You can change the start number with the -start_number input option.
+impl<F, G, T> BitmapHexGridDrawer<F, G, T>
+where
+    F: Fn(T) -> (u8, u8, u8),
+    G: HexGrid<T>,
+    T: PartialEq + Copy + Default,
+{
+    pub fn new(to_color: F, basename: &str) -> BitmapHexGridDrawer<F, G, T> {
+        // TODO: error handling
+        let path = Path::new(basename);
+        if let Some(parent) = path.parent() {
+            std::fs::create_dir_all(parent).expect("could not create folder");
+        }
+        // Make a hexagon
+        let mut hex = vec![vec![(255, 255, 255); 7]; 10];
+        hex.set_value([3, 0], (180, 180, 180));
+        hex.set_value([2, 1], (180, 180, 180));
+        hex.set_value([4, 1], (180, 180, 180));
+        hex.set_value([1, 2], (180, 180, 180));
+        hex.set_value([5, 2], (180, 180, 180));
+        hex.set_value([0, 3], (180, 180, 180));
+        hex.set_value([6, 3], (180, 180, 180));
+        hex.set_value([0, 4], (180, 180, 180));
+        hex.set_value([6, 4], (180, 180, 180));
+        hex.set_value([0, 5], (180, 180, 180));
+        hex.set_value([6, 5], (180, 180, 180));
+        hex.set_value([0, 6], (180, 180, 180));
+        hex.set_value([6, 6], (180, 180, 180));
+        hex.set_value([1, 7], (180, 180, 180));
+        hex.set_value([5, 7], (180, 180, 180));
+        hex.set_value([2, 8], (180, 180, 180));
+        hex.set_value([4, 8], (180, 180, 180));
+        hex.set_value([3, 9], (180, 180, 180));
+        BitmapHexGridDrawer {
+            to_color,
+            frame: 0,
+            basename: basename.into(),
+            image: None,
+            hexagon: hex,
+            phantom: PhantomData,
+            phantom_g: PhantomData,
+        }
+    }
+
+    pub fn save_image(&self) {
+        let path = Path::new(&self.basename);
+        let filename = if let Some(parent) = path.parent() {
+            parent.join(&format!(
+                "{}_{:06}.png",
+                path.file_name().unwrap().to_str().unwrap(),
+                self.frame
+            ))
+        } else {
+            PathBuf::from(&format!("{}_{}.png", self.basename, self.frame))
+        };
+        if let Some(image) = &self.image {
+            image.save(filename).unwrap();
+        }
+    }
+
+    pub fn draw_grid(&mut self, area: &G) {
+        self.frame += 1;
+        let g = self.convert(area);
+        let ([min_x, min_y], [max_x, max_y]) = g.extents();
+        let width = max_x - min_x + 1;
+        let height = max_y - min_y + 1;
+        let pixelw = width * 6;
+        let pixelh = height * 6;
+        // Make a big grid
+        let mut mg = vec![];
+        for _y in 0..pixelh {
+            let mut v = vec![];
+            v.resize(pixelw as usize, (255, 255, 255));
+            mg.push(v)
+        }
+        for y in min_y..=max_y {
+            let (xoffs, yoffs) = if y.rem_euclid(2) == 0 { (3, 0) } else { (0, 0) };
+            for x in min_x..=max_x {
+                mg.blit(
+                    [
+                        ((x - min_x) * 6 + xoffs) as i64,
+                        ((y - min_y) * 6 + yoffs) as i64,
+                    ],
+                    &self.hexagon,
+                );
+            }
+        }
+        // fill them in
+        for y in min_y..=max_y {
+            let (xoffs, yoffs) = if y.rem_euclid(2) == 0 { (3, 0) } else { (0, 0) };
+            for x in min_x..=max_x {
+                let p = [x as i64, y as i64];
+                if let Some(c) = g.get(&p) {
+                    mg.fill(
+                        [
+                            ((x - min_x) * 6 + xoffs + 3) as i64,
+                            ((y - min_y) * 6 + yoffs + 5) as i64,
+                        ],
+                        (self.to_color)(*c),
+                    );
+                }
+            }
+        }
+        // Now make a bitmap image
+        // Default bg is white
+        let buffer = vec![255; (3 * pixelw * pixelh) as usize];
+        let mut image = RgbImage::from_raw(pixelw as u32, pixelh as u32, buffer).unwrap();
+        for y in 0..pixelh {
+            for x in 0..pixelw {
+                let value = mg.get_value([x, y]).unwrap();
+                let (r, g, b) = value;
+                let rgb = Rgb([r, g, b]);
+                image.put_pixel(x as u32, y as u32, rgb);
+            }
+        }
+        self.image = Some(image);
+    }
+
+    pub fn put_pixel(&mut self, p: Point, rgb: (u8, u8, u8)) {
+        if let Some(ref mut image) = self.image {
+            let x = p[0] as u32;
+            let y = p[1] as u32;
+            if x < image.width() && y < image.height() {
+                image.put_pixel(x, y, Rgb([rgb.0, rgb.1, rgb.2]));
+            }
+        }
+    }
+}
+
+impl<F, G, T> HexGridDrawer<G, T> for BitmapHexGridDrawer<F, G, T>
+where
+    F: Fn(T) -> (u8, u8, u8),
+    G: HexGrid<T>,
+    T: PartialEq + Copy + Default,
+{
+    fn draw(&mut self, area: &G) {
+        self.draw_grid(area);
+        self.save_image();
     }
 }
 
