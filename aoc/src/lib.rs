@@ -1663,21 +1663,21 @@ where
         hex.set_value([3, 0], (180, 180, 180));
         hex.set_value([2, 1], (180, 180, 180));
         hex.set_value([4, 1], (180, 180, 180));
-        hex.set_value([1, 2], (180, 180, 180));
-        hex.set_value([5, 2], (180, 180, 180));
+        hex.set_value([1, 1], (180, 180, 180));
+        hex.set_value([5, 1], (180, 180, 180));
+        hex.set_value([0, 2], (180, 180, 180));
+        hex.set_value([6, 2], (180, 180, 180));
         hex.set_value([0, 3], (180, 180, 180));
         hex.set_value([6, 3], (180, 180, 180));
         hex.set_value([0, 4], (180, 180, 180));
         hex.set_value([6, 4], (180, 180, 180));
         hex.set_value([0, 5], (180, 180, 180));
         hex.set_value([6, 5], (180, 180, 180));
-        hex.set_value([0, 6], (180, 180, 180));
-        hex.set_value([6, 6], (180, 180, 180));
-        hex.set_value([1, 7], (180, 180, 180));
-        hex.set_value([5, 7], (180, 180, 180));
-        hex.set_value([2, 8], (180, 180, 180));
-        hex.set_value([4, 8], (180, 180, 180));
-        hex.set_value([3, 9], (180, 180, 180));
+        hex.set_value([1, 6], (180, 180, 180));
+        hex.set_value([5, 6], (180, 180, 180));
+        hex.set_value([2, 6], (180, 180, 180));
+        hex.set_value([4, 7], (180, 180, 180));
+        hex.set_value([3, 7], (180, 180, 180));
         BitmapHexGridDrawer {
             to_color,
             frame: 0,
@@ -1712,7 +1712,7 @@ where
         let width = max_x - min_x + 1;
         let height = max_y - min_y + 1;
         let pixelw = (width + 1) * 6;
-        let pixelh = (height + 1) * 6;
+        let pixelh = (height + 1) * 5;
         // Make a big grid
         let mut mg = vec![];
         for _y in 0..pixelh {
@@ -1726,7 +1726,7 @@ where
                 mg.blit(
                     [
                         ((x - min_x) * 6 + xoffs) as i64,
-                        ((y - min_y) * 6 + yoffs) as i64,
+                        ((y - min_y) * 5 + yoffs) as i64,
                     ],
                     &self.hexagon,
                 );
@@ -1741,7 +1741,7 @@ where
                     mg.fill(
                         [
                             ((x - min_x) * 6 + xoffs + 3) as i64,
-                            ((y - min_y) * 6 + yoffs + 5) as i64,
+                            ((y - min_y) * 5 + yoffs + 3) as i64,
                         ],
                         (self.to_color)(*c),
                     );
