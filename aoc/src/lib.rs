@@ -1049,9 +1049,11 @@ where
     fn get_value(&self, pos: Vec3) -> Option<T>;
     fn set_value(&mut self, pos: Vec3, value: T);
     // Extents in axial coordinates
-    fn extents(&self) -> (Point, Point);
+    fn axial_extents(&self) -> (Point, Point);
+    // Extents in oddr coordinates
+    fn oddr_extents(&self) -> (Point, Point);
     fn points(&self) -> HexGridIteratorHelper {
-        let extents = self.extents();
+        let extents = self.axial_extents();
         HexGridIteratorHelper {
             extents,
             curr: Some(extents.0),
@@ -1143,7 +1145,7 @@ where
     fn set_value(&mut self, pos: Vec3, value: T) {
         *self.entry(pos).or_insert(value) = value;
     }
-    fn extents(&self) -> (Point, Point) {
+    fn axial_extents(&self) -> (Point, Point) {
         let min_q = self
             .iter()
             .map(|(p, _v)| cube_to_axial(*p)[0])
@@ -1165,6 +1167,29 @@ where
             .max()
             .unwrap_or(0);
         ([min_q, min_r], [max_q, max_r])
+    }
+    fn oddr_extents(&self) -> (Point, Point) {
+        let min_x = self
+            .iter()
+            .map(|(p, _v)| cube_to_oddr(*p)[0])
+            .min()
+            .unwrap_or(0);
+        let min_y = self
+            .iter()
+            .map(|(p, _v)| cube_to_oddr(*p)[1])
+            .min()
+            .unwrap_or(0);
+        let max_x = self
+            .iter()
+            .map(|(p, _v)| cube_to_oddr(*p)[0])
+            .max()
+            .unwrap_or(0);
+        let max_y = self
+            .iter()
+            .map(|(p, _v)| cube_to_oddr(*p)[1])
+            .max()
+            .unwrap_or(0);
+        ([min_x, min_y], [max_x, max_y])
     }
 }
 

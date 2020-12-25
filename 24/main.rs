@@ -1,5 +1,3 @@
-use aoc::Grid;
-use aoc::GridDrawer;
 use aoc::HexGrid;
 use aoc::HexGridDrawer;
 use aoc::Vec3;
@@ -64,7 +62,7 @@ fn part2(paths: &Parsed, draw: bool) -> Answer {
     for _ in 0..100 {
         let mut newg = g.clone();
         // Note: extents is in axial coords
-        let ([min_q, min_r], [max_q, max_r]) = newg.extents();
+        let ([min_q, min_r], [max_q, max_r]) = newg.axial_extents();
         for q in (min_q - 1)..=(max_q + 1) {
             for r in (min_r - 1)..=(max_r + 1) {
                 let p = aoc::axial_to_cube([q, r]);
@@ -93,21 +91,22 @@ fn part2(paths: &Parsed, draw: bool) -> Answer {
     }
     if draw {
         // Draw all the grids, using the same coord system
-        let mut min_qq = 0;
-        let mut min_rr = 0;
-        let mut max_qq = 0;
-        let mut max_rr = 0;
+        let mut min_xx = 0;
+        let mut min_yy = 0;
+        let mut max_xx = 0;
+        let mut max_yy = 0;
         for gg in &all_grid {
-            let ([min_q, min_r], [max_q, max_r]) = gg.extents();
-            min_qq = min_qq.min(min_q);
-            min_rr = min_rr.min(min_r);
-            max_qq = max_qq.max(max_q);
-            max_rr = max_rr.max(max_r);
+	    // To figure the row/col span, use oddr coords
+            let ([min_x, min_y], [max_x, max_y]) = gg.oddr_extents();
+            min_xx = min_xx.min(min_x);
+            min_yy = min_yy.min(min_y);
+            max_xx = max_xx.max(max_x);
+            max_yy = max_yy.max(max_y);
         }
         for gg in &mut all_grid {
             // Insert the min/max corners in all grids
-            gg.insert(aoc::axial_to_cube([min_qq, min_rr]), '.');
-            gg.insert(aoc::axial_to_cube([max_qq, max_rr]), '.');
+            gg.insert(aoc::oddr_to_cube([min_xx, min_yy]), '.');
+            gg.insert(aoc::oddr_to_cube([max_xx, max_yy]), '.');
         }
         let mut gd = aoc::BitmapHexGridDrawer::new(
             |x| {
