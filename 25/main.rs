@@ -1,5 +1,5 @@
-use std::iter::*;
 use std::collections::HashMap;
+use std::iter::*;
 
 type Parsed = Vec<u64>;
 type Answer = u64;
@@ -8,18 +8,18 @@ type Answer = u64;
 /// Ported from C++ code from https://en.wikipedia.org/wiki/Baby-step_giant-step
 fn babystep_giantstep(g: u64, h: u64, modulus: u64) -> Option<u64> {
     let m = (modulus as f64).sqrt().ceil() as u64;
-    let mut table : HashMap<u64, u64> = HashMap::new();
+    let mut table: HashMap<u64, u64> = HashMap::new();
     table.reserve(m as usize);
     let mut e = 1u128; // temporary values may be bigger than 64 bit
     for i in 0..m {
         table.insert(e as u64, i);
         e = (e * g as u128).rem_euclid(modulus as u128);
     }
-    let factor = aoc::mod_exp(g, modulus-m-1, modulus);
+    let factor = aoc::mod_exp(g, modulus - m - 1, modulus);
     e = h as u128;
     for i in 0..m {
-	if let Some(v) = table.get(&(e as u64)) {
-            return Some(i*m + v);
+        if let Some(v) = table.get(&(e as u64)) {
+            return Some(i * m + v);
         }
         e = (e * factor as u128).rem_euclid(modulus as u128);
     }
@@ -67,7 +67,7 @@ mod tests {
     fn test_part1() {
         assert_eq!(loopsize(5764801), Some(8));
         assert_eq!(loopsize(17807724), Some(11));
-	assert_eq!(transform(5764801, 11), 14897079);
-	assert_eq!(transform(17807724, 8), 14897079);
+        assert_eq!(transform(5764801, 11), 14897079);
+        assert_eq!(transform(17807724, 8), 14897079);
     }
 }
