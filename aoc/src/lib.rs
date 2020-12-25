@@ -867,7 +867,8 @@ where
 }
 
 // These can be converted to movies with:
-// ffmpeg -framerate 25 -i "basename_%06d.png" output
+// ffmpeg -i "basename_%06d.png" -filter_complex "[0:v] palettegen" basename_palette.png
+// ffmpeg -framerate 25 -i "basename_%06d.png" -i basename.png -filter_complex "[0:v][1:v] paletteuse" basename.gif
 // You can change the start number with the -start_number input option.
 impl<F, G, T> BitmapGridDrawer<F, G, T>
 where
@@ -1469,7 +1470,8 @@ where
 }
 
 // These can be converted to movies with:
-// ffmpeg -framerate 25 -i "basename_%06d.png" output
+// ffmpeg -i "basename_%06d.png" -filter_complex "[0:v] palettegen" basename_palette.png
+// ffmpeg -framerate 25 -i "basename_%06d.png" -i basename.png -filter_complex "[0:v][1:v] paletteuse" basename.gif
 // You can change the start number with the -start_number input option.
 impl<F, G, T> BitmapHexGridDrawer<F, G, T>
 where
