@@ -1060,17 +1060,16 @@ where
             curr: Some(extents.0),
         }
     }
-    // fn flip_horizontal(&mut self);
-    // fn flip_vertical(&mut self);
-    // fn flip_x(&mut self);
-    // fn flip_y(&mut self);
-    // fn flip_z(&mut self);
-    // fn transpose(&mut self);
-    // fn rotate_60_cw(&mut self);
-    // fn rotate_120_cw(&mut self);
-    // fn rotate_180_cw(&mut self);
-    // fn rotate_240_cw(&mut self);
-    // fn rotate_300_cw(&mut self);
+    fn flip_horizontal(&mut self);
+    fn flip_vertical(&mut self);
+    fn flip_x(&mut self);
+    fn flip_y(&mut self);
+    fn flip_z(&mut self);
+    fn rotate_60_cw(&mut self);
+    fn rotate_120_cw(&mut self);
+    fn rotate_180_cw(&mut self);
+    fn rotate_240_cw(&mut self);
+    fn rotate_300_cw(&mut self);
     // fn fill(&mut self, pos: Vec3, value: T) {
     //     let ([min_x, min_y, min_z], [max_x, max_y, max_z]) = self.extents();
     //     if let Some(old) = self.get_value(pos) {
@@ -1192,6 +1191,162 @@ where
             .unwrap_or(0);
         ([min_x, min_y], [max_x, max_y])
     }
+    fn flip_horizontal(&mut self) {
+        let ([min_x, _min_y], [max_x, _max_y]) = self.oddr_extents();
+        let mut new_grid = HashMap::new();
+        for (p, v) in self.iter() {
+            let p = cube_to_oddr(*p);
+            let new_x = max_x - (p[0] - min_x);
+            let p = oddr_to_cube([new_x, p[1]]);
+            new_grid.insert(p, *v);
+        }
+        self.clear();
+        for (k, v) in new_grid {
+            self.insert(k, v);
+        }
+    }
+    fn flip_vertical(&mut self) {
+        let ([_min_x, min_y], [_max_x, max_y]) = self.oddr_extents();
+        let mut new_grid = HashMap::new();
+        for (p, v) in self.iter() {
+            let p = cube_to_oddr(*p);
+            let new_y = max_y - (p[1] - min_y);
+            let p = oddr_to_cube([p[0], new_y]);
+            new_grid.insert(p, *v);
+        }
+        self.clear();
+        for (k, v) in new_grid {
+            self.insert(k, v);
+        }
+    }
+    fn flip_x(&mut self) {
+        let ([min_x, min_y], [max_x, max_y]) = self.oddr_extents();
+        let mid_x = (max_x - min_x + 1) / 2;
+        let mid_y = (max_y - min_y + 1) / 2;
+        let pivot = oddr_to_cube([mid_x, mid_y]);
+        let mut new_grid = HashMap::new();
+        for ([x, y, z], v) in self.iter() {
+            let p = vec_sub([*x, *y, *z], pivot);
+            let p = vec_add([p[0], p[2], p[1]], pivot);
+            new_grid.insert(p, *v);
+        }
+        self.clear();
+        for (k, v) in new_grid {
+            self.insert(k, v);
+        }
+    }
+    fn flip_y(&mut self) {
+        let mut new_grid = HashMap::new();
+        let ([min_x, min_y], [max_x, max_y]) = self.oddr_extents();
+        let mid_x = (max_x - min_x + 1) / 2;
+        let mid_y = (max_y - min_y + 1) / 2;
+        let pivot = oddr_to_cube([mid_x, mid_y]);
+        for ([x, y, z], v) in self.iter() {
+            let p = vec_sub([*x, *y, *z], pivot);
+            let p = vec_add([p[2], p[1], p[0]], pivot);
+            new_grid.insert(p, *v);
+        }
+        self.clear();
+        for (k, v) in new_grid {
+            self.insert(k, v);
+        }
+    }
+    fn flip_z(&mut self) {
+        let mut new_grid = HashMap::new();
+        let ([min_x, min_y], [max_x, max_y]) = self.oddr_extents();
+        let mid_x = (max_x - min_x + 1) / 2;
+        let mid_y = (max_y - min_y + 1) / 2;
+        let pivot = oddr_to_cube([mid_x, mid_y]);
+        for ([x, y, z], v) in self.iter() {
+            let p = vec_sub([*x, *y, *z], pivot);
+            let p = vec_add([p[1], p[0], p[2]], pivot);
+            new_grid.insert(p, *v);
+        }
+        self.clear();
+        for (k, v) in new_grid {
+            self.insert(k, v);
+        }
+    }
+    fn rotate_60_cw(&mut self) {
+        let mut new_grid = HashMap::new();
+        let ([min_x, min_y], [max_x, max_y]) = self.oddr_extents();
+        let mid_x = (max_x - min_x + 1) / 2;
+        let mid_y = (max_y - min_y + 1) / 2;
+        let pivot = oddr_to_cube([mid_x, mid_y]);
+        for ([x, y, z], v) in self.iter() {
+            let p = vec_sub([*x, *y, *z], pivot);
+            let p = vec_add([-p[2], -p[0], -p[1]], pivot);
+            new_grid.insert(p, *v);
+        }
+        self.clear();
+        for (k, v) in new_grid {
+            self.insert(k, v);
+        }
+    }
+    fn rotate_120_cw(&mut self) {
+        let mut new_grid = HashMap::new();
+        let ([min_x, min_y], [max_x, max_y]) = self.oddr_extents();
+        let mid_x = (max_x - min_x + 1) / 2;
+        let mid_y = (max_y - min_y + 1) / 2;
+        let pivot = oddr_to_cube([mid_x, mid_y]);
+        for ([x, y, z], v) in self.iter() {
+            let p = vec_sub([*x, *y, *z], pivot);
+            let p = vec_add([p[1], p[2], p[0]], pivot);
+            new_grid.insert(p, *v);
+        }
+        self.clear();
+        for (k, v) in new_grid {
+            self.insert(k, v);
+        }
+    }
+    fn rotate_180_cw(&mut self) {
+        let mut new_grid = HashMap::new();
+        let ([min_x, min_y], [max_x, max_y]) = self.oddr_extents();
+        let mid_x = (max_x - min_x + 1) / 2;
+        let mid_y = (max_y - min_y + 1) / 2;
+        let pivot = oddr_to_cube([mid_x, mid_y]);
+        for ([x, y, z], v) in self.iter() {
+            let p = vec_sub([*x, *y, *z], pivot);
+            let p = vec_add([-p[0], -p[1], -p[2]], pivot);
+            new_grid.insert(p, *v);
+        }
+        self.clear();
+        for (k, v) in new_grid {
+            self.insert(k, v);
+        }
+    }
+    fn rotate_240_cw(&mut self) {
+        let mut new_grid = HashMap::new();
+        let ([min_x, min_y], [max_x, max_y]) = self.oddr_extents();
+        let mid_x = (max_x - min_x + 1) / 2;
+        let mid_y = (max_y - min_y + 1) / 2;
+        let pivot = oddr_to_cube([mid_x, mid_y]);
+        for ([x, y, z], v) in self.iter() {
+            let p = vec_sub([*x, *y, *z], pivot);
+            let p = vec_add([p[2], p[0], p[1]], pivot);
+            new_grid.insert(p, *v);
+        }
+        self.clear();
+        for (k, v) in new_grid {
+            self.insert(k, v);
+        }
+    }
+    fn rotate_300_cw(&mut self) {
+        let mut new_grid = HashMap::new();
+        let ([min_x, min_y], [max_x, max_y]) = self.oddr_extents();
+        let mid_x = (max_x - min_x + 1) / 2;
+        let mid_y = (max_y - min_y + 1) / 2;
+        let pivot = oddr_to_cube([mid_x, mid_y]);
+        for ([x, y, z], v) in self.iter() {
+            let p = vec_sub([*x, *y, *z], pivot);
+            let p = vec_add([-p[1], -p[2], -p[0]], pivot);
+            new_grid.insert(p, *v);
+        }
+        self.clear();
+        for (k, v) in new_grid {
+            self.insert(k, v);
+        }
+    }
 }
 
 pub fn axial_to_cube(axial: Point) -> Vec3 {
@@ -1287,11 +1442,13 @@ where
     fn draw(&mut self, area: &G) {
         let g = self.convert(area);
         let ([min_x, min_y], [max_x, max_y]) = g.extents();
-        print!(" ");
-        for _ in min_x..=max_x {
-            print!("/ \\ ");
+        if min_y.rem_euclid(2) == 0 {
+            print!(" ");
+            for _ in min_x..=max_x {
+                print!("/ \\ ");
+            }
+            println!("/");
         }
-        println!("/");
         for y in min_y..=max_y {
             if y.rem_euclid(2) != 0 {
                 print!(" ");
@@ -1405,13 +1562,15 @@ where
         let yoffs = (self.h - hh) / 2;
         let mut xx = xoffs as i32;
         let mut yy = yoffs as i32;
-        self.put(xx, yy, ' ');
-        xx += 1;
-        for _ in min_x..=max_x {
-            self.put_str(xx, yy, "/ \\ ");
-            xx += 4;
+        if min_y.rem_euclid(2) == 0 {
+            self.put(xx, yy, ' ');
+            xx += 1;
+            for _ in min_x..=max_x {
+                self.put_str(xx, yy, "/ \\ ");
+                xx += 4;
+            }
+            self.put(xx, yy, '/');
         }
-        self.put(xx, yy, '/');
         xx = xoffs;
         yy += 1;
         for y in min_y..=max_y {
