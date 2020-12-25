@@ -597,10 +597,10 @@ where
         *self.entry(pos).or_insert(value) = value;
     }
     fn extents(&self) -> (Point, Point) {
-        let min_x = self.iter().map(|(p, _v)| p[0]).min().unwrap();
-        let min_y = self.iter().map(|(p, _v)| p[1]).min().unwrap();
-        let max_x = self.iter().map(|(p, _v)| p[0]).max().unwrap();
-        let max_y = self.iter().map(|(p, _v)| p[1]).max().unwrap();
+        let min_x = self.iter().map(|(p, _v)| p[0]).min().unwrap_or(0);
+        let min_y = self.iter().map(|(p, _v)| p[1]).min().unwrap_or(0);
+        let max_x = self.iter().map(|(p, _v)| p[0]).max().unwrap_or(0);
+        let max_y = self.iter().map(|(p, _v)| p[1]).max().unwrap_or(0);
         ([min_x, min_y], [max_x, max_y])
     }
     fn flip_horizontal(&mut self) {
@@ -1142,10 +1142,10 @@ where
         *self.entry(pos).or_insert(value) = value;
     }
     fn extents(&self) -> (Point, Point) {
-        let min_q = self.iter().map(|(p, _v)| cube_to_axial(*p)[0]).min().unwrap();
-        let min_r = self.iter().map(|(p, _v)| cube_to_axial(*p)[1]).min().unwrap();
-        let max_q = self.iter().map(|(p, _v)| cube_to_axial(*p)[0]).max().unwrap();
-        let max_r = self.iter().map(|(p, _v)| cube_to_axial(*p)[1]).max().unwrap();
+        let min_q = self.iter().map(|(p, _v)| cube_to_axial(*p)[0]).min().unwrap_or(0);
+        let min_r = self.iter().map(|(p, _v)| cube_to_axial(*p)[1]).min().unwrap_or(0);
+        let max_q = self.iter().map(|(p, _v)| cube_to_axial(*p)[0]).max().unwrap_or(0);
+        let max_r = self.iter().map(|(p, _v)| cube_to_axial(*p)[1]).max().unwrap_or(0);
         ([min_q, min_r], [max_q, max_r])
     }
 }
@@ -1272,6 +1272,141 @@ where
             }
 	    println!();
         }
+    }
+}
+
+pub struct CursesHexGridDrawer<F, T>
+where
+    F: Fn(T) -> char,
+{
+    window: pancurses::Window,
+    to_ch: F,
+    phantom: PhantomData<T>,
+    w: i32,
+    h: i32,
+}
+
+impl<F, T> CursesHexGridDrawer<F, T>
+where
+    F: Fn(T) -> char,
+{
+    pub fn new(to_ch: F) -> CursesHexGridDrawer<F, T> {
+        let window = pancurses::initscr();
+        pancurses::nl();
+        pancurses::noecho();
+        pancurses::curs_set(0);
+        window.keypad(true);
+        window.scrollok(true);
+        window.nodelay(true);
+        CursesHexGridDrawer {
+            window,
+            to_ch,
+            phantom: PhantomData,
+	    w: 0,
+	    h: 0,
+        }
+    }
+
+    fn to_char(&self, col: T) -> char {
+        let ch = (self.to_ch)(col);
+	if ch == char::default() {
+	    ' '
+	} else {
+	    ch
+	}
+    }
+
+    fn put(&self, x: i32, y: i32, c: char) {
+	if x >= 0 && x < self.w && y >= 0 && y < self.h && c != ' ' {
+	    self.window.mvaddch(y, x, c);
+	}
+    }
+    fn put_str(&self, x: i32, y: i32, s: &str) {
+	for (ii, c) in s.chars().enumerate() {
+	    let i = ii as i32;
+	    self.put(x + i, y, c);
+	}
+    }
+}
+
+impl<F, T> Drop for CursesHexGridDrawer<F, T>
+where
+    F: Fn(T) -> char,
+{
+    fn drop(&mut self) {
+        pancurses::endwin();
+    }
+}
+
+impl<F, G, T> HexGridDrawer<G, T> for CursesHexGridDrawer<F, T>
+where
+    F: Fn(T) -> char,
+    G: HexGrid<T>,
+    T: PartialEq + Copy + Default,
+{
+    fn draw(&mut self, area: &G) {
+        self.window.clear();
+        let g = self.convert(area);
+        let ([min_x, min_y], [max_x, max_y]) = g.extents();
+	self.w = self.window.get_max_x();
+	self.h = self.window.get_max_y();
+	let ww = (4 * (max_x - min_x + 1) + 3) as i32;
+	let hh = (2 * (max_y - min_y + 1)) as i32;
+	let xoffs = (self.w - ww) / 2;
+	let yoffs = (self.h - hh) / 2;
+	let mut xx = xoffs as i32;
+	let mut yy = yoffs as i32;
+        for y in min_y..=max_y {
+            if y.rem_euclid(2) == 0 {
+		self.put(xx, yy, ' ');
+		xx += 1;
+                for _ in min_x..=max_x {
+		    self.put_str(xx, yy, "\\ / ");
+		    xx += 4;
+                }
+		self.put(xx, yy, '\\');
+		xx = xoffs;
+		yy += 1;
+            }
+            if y.rem_euclid(2) == 0 {
+		self.put_str(xx, yy, "  ");
+		xx += 2;
+	    }
+            for x in min_x..=max_x {
+                let p = [x as i64, y as i64];
+		let d = T::default();
+                let c = g.get(&p).unwrap_or(&d);
+		let s = format!("| {} ", self.to_char(*c));
+		self.put_str(xx, yy, &s);
+		xx += s.len() as i32;
+            }
+	    self.put(xx, yy, '|');
+	    // xx += 1;
+            if y.rem_euclid(2) == 0 {
+		xx = xoffs;
+		yy += 1;
+		self.put(xx, yy, ' ');
+		xx += 1;
+                for _ in min_x..=max_x {
+		    self.put_str(xx, yy, "/ \\ ");
+		    xx += 4;
+		}
+		self.put(xx, yy, '/');
+		// xx += 1;
+            }
+	    xx = xoffs;
+	    yy += 1;
+	    if yy > self.h {
+		break;
+	    }
+        }
+        if let Some(pancurses::Input::Character(c)) = self.window.getch() {
+            if c == 'q' {
+                pancurses::endwin();
+                std::process::exit(0);
+            }
+        }
+        self.window.refresh();
     }
 }
 
