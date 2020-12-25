@@ -1287,8 +1287,13 @@ where
     fn draw(&mut self, area: &G) {
         let g = self.convert(area);
         let ([min_x, min_y], [max_x, max_y]) = g.extents();
+        print!(" ");
+        for _ in min_x..=max_x {
+            print!("/ \\ ");
+        }
+        println!("/");
         for y in min_y..=max_y {
-            if y.rem_euclid(2) == 0 {
+            if y.rem_euclid(2) != 0 {
                 print!(" ");
                 for _ in min_x..=max_x {
                     print!("\\ / ");
@@ -1296,7 +1301,7 @@ where
                 print!("\\");
                 println!();
             }
-            if y.rem_euclid(2) == 0 {
+            if y.rem_euclid(2) != 0 {
                 print!("  ");
             }
             for x in min_x..=max_x {
@@ -1306,7 +1311,7 @@ where
                 print!("| {} ", self.to_char(*c));
             }
             print!("|");
-            if y.rem_euclid(2) == 0 {
+            if y.rem_euclid(2) != 0 {
                 println!();
                 print!(" ");
                 for _ in min_x..=max_x {
@@ -1400,8 +1405,17 @@ where
         let yoffs = (self.h - hh) / 2;
         let mut xx = xoffs as i32;
         let mut yy = yoffs as i32;
+        self.put(xx, yy, ' ');
+        xx += 1;
+        for _ in min_x..=max_x {
+            self.put_str(xx, yy, "/ \\ ");
+            xx += 4;
+        }
+        self.put(xx, yy, '/');
+        xx = xoffs;
+        yy += 1;
         for y in min_y..=max_y {
-            if y.rem_euclid(2) == 0 {
+            if y.rem_euclid(2) != 0 {
                 self.put(xx, yy, ' ');
                 xx += 1;
                 for _ in min_x..=max_x {
@@ -1412,7 +1426,7 @@ where
                 xx = xoffs;
                 yy += 1;
             }
-            if y.rem_euclid(2) == 0 {
+            if y.rem_euclid(2) != 0 {
                 self.put_str(xx, yy, "  ");
                 xx += 2;
             }
@@ -1426,7 +1440,7 @@ where
             }
             self.put(xx, yy, '|');
             // xx += 1;
-            if y.rem_euclid(2) == 0 {
+            if y.rem_euclid(2) != 0 {
                 xx = xoffs;
                 yy += 1;
                 self.put(xx, yy, ' ');
@@ -1538,8 +1552,8 @@ where
         let ([min_x, min_y], [max_x, max_y]) = g.extents();
         let width = max_x - min_x + 1;
         let height = max_y - min_y + 1;
-        let pixelw = width * 6;
-        let pixelh = height * 6;
+        let pixelw = (width + 1) * 6;
+        let pixelh = (height + 1) * 6;
         // Make a big grid
         let mut mg = vec![];
         for _y in 0..pixelh {
@@ -1548,7 +1562,7 @@ where
             mg.push(v)
         }
         for y in min_y..=max_y {
-            let (xoffs, yoffs) = if y.rem_euclid(2) == 0 { (3, 0) } else { (0, 0) };
+            let (xoffs, yoffs) = if y.rem_euclid(2) != 0 { (3, 0) } else { (0, 0) };
             for x in min_x..=max_x {
                 mg.blit(
                     [
@@ -1561,7 +1575,7 @@ where
         }
         // fill them in
         for y in min_y..=max_y {
-            let (xoffs, yoffs) = if y.rem_euclid(2) == 0 { (3, 0) } else { (0, 0) };
+            let (xoffs, yoffs) = if y.rem_euclid(2) != 0 { (3, 0) } else { (0, 0) };
             for x in min_x..=max_x {
                 let p = [x as i64, y as i64];
                 if let Some(c) = g.get(&p) {
