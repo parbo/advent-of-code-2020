@@ -162,11 +162,11 @@ fn place(
         }
         // Try to make it fit with the neighbors
         'outer: for ggg in g.transpositions() {
-            for d in aoc::DIRECTIONS.clone() {
-                let c = aoc::point_add(coord, d);
+            for d in &aoc::DIRECTIONS {
+                let c = aoc::point_add(coord, *d);
                 if let Some((_id, g)) = grid_of_grids.get(&c) {
-                    let e = get_edge(&ggg, d);
-                    let other_e = match d {
+                    let e = get_edge(&ggg, *d);
+                    let other_e = match *d {
                         aoc::NORTH => get_edge(g, aoc::SOUTH),
                         aoc::EAST => get_edge(g, aoc::WEST),
                         aoc::SOUTH => get_edge(g, aoc::NORTH),

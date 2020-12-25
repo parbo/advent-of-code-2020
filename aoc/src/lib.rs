@@ -101,13 +101,19 @@ pub const LEFT: Point = WEST;
 pub const NORTH_WEST: Point = [-1, -1];
 pub const UP_LEFT: Point = NORTH_WEST;
 
+// Hex directions
+pub const HEX_E: Vec3 = [1, -1, 0];
+pub const HEX_W: Vec3 = [-1, 1, 0];
+pub const HEX_SE: Vec3 = [0, -1, 1];
+pub const HEX_SW: Vec3 = [-1, 0, 1];
+pub const HEX_NW: Vec3 = [0, 1, -1];
+pub const HEX_NE: Vec3 = [1, 0, -1];
+
+pub const DIRECTIONS : [Point;4] = [NORTH, EAST, SOUTH, WEST];
+pub const DIRECTIONS_INCL_DIAGONALS : [Point;8]  = [NORTH, NORTH_EAST, EAST, SOUTH_EAST, SOUTH, SOUTH_WEST, WEST, NORTH_WEST];
+pub const HEX_DIRECTIONS : [Vec3;6]  = [HEX_E, HEX_W, HEX_SW, HEX_SE, HEX_NW, HEX_NE];
+
 lazy_static! {
-    pub static ref DIRECTIONS: Vec<Point> = vec![NORTH, EAST, SOUTH, WEST];
-    pub static ref DIRECTIONS_INCL_DIAGONALS: Vec<Point> = {
-        vec![
-            NORTH, NORTH_EAST, EAST, SOUTH_EAST, SOUTH, SOUTH_WEST, WEST, NORTH_WEST,
-        ]
-    };
     pub static ref DIRECTION_MAP: HashMap<&'static str, Point> = {
         let mut map = HashMap::new();
         map.insert("U", NORTH);
@@ -256,9 +262,9 @@ pub fn grid_to_graph<T>(
 where
     T: PartialEq + Copy,
 {
-    let directions: Vec<_> = match directions {
-        4 => DIRECTIONS.clone(),
-        8 => DIRECTIONS_INCL_DIAGONALS.clone(),
+    let directions = match directions {
+        4 => DIRECTIONS.to_vec(),
+        8 => DIRECTIONS_INCL_DIAGONALS.to_vec(),
         _ => panic!(),
     };
 
@@ -1005,6 +1011,268 @@ pub fn plot_line(a: Point, b: Point) -> Vec<Point> {
         }
     }
     out
+}
+
+// Iterates in axial coordinates
+pub struct HexGridIteratorHelper {
+    extents: (Point, Point),
+    curr: Option<Point>,
+}
+
+impl Iterator for HexGridIteratorHelper {
+    type Item = Vec3;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if let Some([x, y]) = self.curr {
+            let c = if x < self.extents.1[0] {
+                Some([x + 1, y])
+            } else if y < self.extents.1[1] {
+                Some([self.extents.0[0], y + 1])
+            } else {
+                None
+            };
+            let curr = self.curr;
+            self.curr = c;
+            curr.and_then(|x| Some(axial_to_cube(x)))
+        } else {
+            None
+        }
+    }
+}
+
+pub trait HexGrid<T>
+where
+    T: PartialEq + Copy,
+{
+    fn get_value(&self, pos: Vec3) -> Option<T>;
+    fn set_value(&mut self, pos: Vec3, value: T);
+    // Extents in axial coordinates
+    fn extents(&self) -> (Point, Point);
+    fn points(&self) -> HexGridIteratorHelper {
+        let extents = self.extents();
+        HexGridIteratorHelper {
+            extents,
+            curr: Some(extents.0),
+        }
+    }
+    // fn flip_horizontal(&mut self);
+    // fn flip_vertical(&mut self);
+    // fn flip_x(&mut self);
+    // fn flip_y(&mut self);
+    // fn flip_z(&mut self);
+    // fn transpose(&mut self);
+    // fn rotate_60_cw(&mut self);
+    // fn rotate_120_cw(&mut self);
+    // fn rotate_180_cw(&mut self);
+    // fn rotate_240_cw(&mut self);
+    // fn rotate_300_cw(&mut self);
+    // fn fill(&mut self, pos: Vec3, value: T) {
+    //     let ([min_x, min_y, min_z], [max_x, max_y, max_z]) = self.extents();
+    //     if let Some(old) = self.get_value(pos) {
+    //         if value != old {
+    //             let mut todo = vec![];
+    //             todo.push(pos);
+    //             while let Some(p) = todo.pop() {
+    //                 if let Some(curr) = self.get_value(p) {
+    //                     if curr == old {
+    //                         self.set_value(p, value);
+    //                         if p[0] > min_x {
+    //                             todo.push([p[0] - 1, p[1], p[2]]);
+    //                         }
+    //                         if p[0] < max_x {
+    //                             todo.push([p[0] + 1, p[1], p[2]]);
+    //                         }
+    //                         if p[1] > min_y {
+    //                             todo.push([p[0], p[1] - 1, p[2]]);
+    //                         }
+    //                         if p[1] < max_y {
+    //                             todo.push([p[0], p[1] + 1, p[2]]);
+    //                         }
+    //                         if p[2] > min_z {
+    //                             todo.push([p[0], p[1], p[2] - 1]);
+    //                         }
+    //                         if p[2] < max_z {
+    //                             todo.push([p[0], p[1], p[2] + 1]);
+    //                         }
+    //                     }
+    //                 }
+    //             }
+    //         }
+    //     }
+    // }
+    // fn line(&mut self, a: Vec3, b: Vec3, value: T);
+    // fn blit(&mut self, pos: Vec3, g: &dyn HexGrid<T>) {
+    //     let (start, end) = g.extents();
+    //     self.blit_rect(pos, g, start, end);
+    // }
+    // // pos is position to blit to, start/end is the rect to copy from grid
+    // fn blit_rect(&mut self, pos: Vec3, g: &dyn HexGrid<T>, start: Vec3, end: Vec3) {
+    //     let ([min_x, min_y, min_z], [max_x, max_y, max_z]) = g.extents();
+    //     let min_xx = min_x.max(start[0]);
+    //     let min_yy = min_y.max(start[1]);
+    //     let min_zz = min_z.max(start[2]);
+    //     let max_xx = max_x.min(end[0]);
+    //     let max_yy = max_y.min(end[1]);
+    //     let max_zz = max_z.min(end[2]);
+    //     for (dy, yy) in (min_yy..=max_yy).enumerate() {
+    //         for (dx, xx) in (min_xx..=max_xx).enumerate() {
+    // 		for (dz, zz) in (min_zz..=max_zz).enumerate() {
+    //                 let [xxx, yyy, zzz] = vec_add(pos, [dx as i64, dy as i64, dz as i64]);
+    //                 if let Some(v) = g.get_value([xx, yy, zz]) {
+    // 			self.set_value([xxx, yyy, zzz], v);
+    //                 }
+    // 		}
+    //         }
+    //     }
+    // }
+}
+
+impl<S: ::std::hash::BuildHasher, T> HexGrid<T> for HashMap<Vec3, T, S>
+where
+    T: Clone + Copy + Default + PartialEq,
+{
+    fn get_value(&self, pos: Vec3) -> Option<T> {
+        if let Some(x) = self.get(&pos) {
+            Some(*x)
+        } else {
+            None
+        }
+    }
+    fn set_value(&mut self, pos: Vec3, value: T) {
+        *self.entry(pos).or_insert(value) = value;
+    }
+    fn extents(&self) -> (Point, Point) {
+        let min_q = self.iter().map(|(p, _v)| cube_to_axial(*p)[0]).min().unwrap();
+        let min_r = self.iter().map(|(p, _v)| cube_to_axial(*p)[1]).min().unwrap();
+        let max_q = self.iter().map(|(p, _v)| cube_to_axial(*p)[0]).max().unwrap();
+        let max_r = self.iter().map(|(p, _v)| cube_to_axial(*p)[1]).max().unwrap();
+        ([min_q, min_r], [max_q, max_r])
+    }
+}
+
+pub fn axial_to_cube(axial: Point) -> Vec3 {
+    let x = axial[0];
+    let z = axial[1];
+    let y = -x - z;
+    [x, y, z]
+}
+
+pub fn cube_to_axial(cube: Vec3) -> Point {
+    let q = cube[0];
+    let r = cube[2];
+    return [q, r];
+}
+
+pub fn cube_to_oddr(cube: Vec3) -> Point {
+    let col = cube[0] + (cube[2] - (cube[2].rem_euclid(2))) / 2;
+    let row = cube[2];
+    [col, row]
+}
+
+pub fn oddr_to_cube(oddr: Point) -> Vec3 {
+    let x = oddr[0] - (oddr[1] - (oddr[1].rem_euclid(2))) / 2;
+    let z = oddr[1];
+    let y = -x - z;
+    [x, y, z]
+}
+
+pub trait HexGridDrawer<G, T>
+where
+    G: HexGrid<T>,
+    T: PartialEq + Copy + Default,
+{
+    fn draw(&mut self, area: &G);
+    // Convert to offset coordinate based sparse grid for printing
+    fn convert(&self, g: &G) -> HashMap<Point, T> {
+	let mut gg : HashMap<Point, T> = HashMap::new();
+        // Convert coords
+        for p in g.points() {
+	    if let Some(v) = g.get_value(p) {
+		gg.set_value(cube_to_oddr(p), v);
+	    }
+        }
+	gg
+    }
+}
+
+pub struct NopHexGridDrawer {}
+
+impl<G, T> HexGridDrawer<G, T> for NopHexGridDrawer
+where
+    G: HexGrid<T>,
+    T: PartialEq + Copy + Default,
+{
+    fn draw(&mut self, _: &G) {}
+}
+
+pub struct PrintHexGridDrawer<F, T>
+where
+    F: Fn(T) -> char,
+{
+    to_ch: F,
+    phantom: PhantomData<T>,
+}
+
+impl<F, T> PrintHexGridDrawer<F, T>
+where
+    F: Fn(T) -> char,
+{
+    pub fn new(to_ch: F) -> PrintHexGridDrawer<F, T> {
+        PrintHexGridDrawer {
+            to_ch,
+            phantom: PhantomData,
+        }
+    }
+
+    fn to_char(&self, col: T) -> char {
+        let ch = (self.to_ch)(col);
+	if ch == char::default() {
+	    ' '
+	} else {
+	    ch
+	}
+    }
+}
+
+impl<F, G, T> HexGridDrawer<G, T> for PrintHexGridDrawer<F, T>
+where
+    F: Fn(T) -> char,
+    G: HexGrid<T>,
+    T: PartialEq + Copy + Default,
+{
+    fn draw(&mut self, area: &G) {
+        let g = self.convert(area);
+        let ([min_x, min_y], [max_x, max_y]) = g.extents();
+        for y in min_y..=max_y {
+            if y.rem_euclid(2) == 0 {
+		print!(" ");
+                for _ in min_x..=max_x {
+                    print!("\\ / ");
+                }
+                print!("\\");
+		println!();
+            }
+            if y.rem_euclid(2) == 0 {
+                print!("  ");
+	    }
+            for x in min_x..=max_x {
+                let p = [x as i64, y as i64];
+		let d = T::default();
+                let c = g.get(&p).unwrap_or(&d);
+		print!("| {} ", self.to_char(*c));
+            }
+	    print!("|");
+            if y.rem_euclid(2) == 0 {
+		println!();
+		print!(" ");
+                for _ in min_x..=max_x {
+                    print!("/ \\ ");
+                }
+                print!("/");
+            }
+	    println!();
+        }
+    }
 }
 
 pub fn read_lines_from(filename: &str) -> Vec<String> {

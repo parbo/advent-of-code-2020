@@ -52,48 +52,13 @@ fn cube_to_oddr(cube: Vec3) -> aoc::Point {
     [col, row]
 }
 
-fn draw(gg: &HashMap<Vec3, char>) {
-    let mut g = HashMap::new();
-    for (p, v) in gg {
-        g.insert(cube_to_oddr(*p), *v);
-    }
-    println!("=============================================");
-    let min_x = g.iter().map(|(p, _v)| p[0]).min().unwrap();
-    let min_y = g.iter().map(|(p, _v)| p[1]).min().unwrap();
-    let max_x = g.iter().map(|(p, _v)| p[0]).max().unwrap();
-    let max_y = g.iter().map(|(p, _v)| p[1]).max().unwrap();
-    for y in min_y..=max_y {
-        if y.rem_euclid(2) == 0 {
-            for _ in min_x..=max_x {
-                print!("\\/");
-            }
-            println!();
-        }
-        if y.rem_euclid(2) == 0 {
-            print!(" ");
-        }
-        for x in min_x..=max_x {
-            let p = [x, y];
-            let c = g.get(&p).unwrap_or(&'.');
-            print!("|{}", c);
-        }
-        if y.rem_euclid(2) == 0 {
-            println!();
-            for _ in min_x..=max_x {
-                print!("/\\");
-            }
-        }
-        println!();
-    }
-}
-
-fn part2(paths: &Parsed) -> Answer {
+fn part2(paths: &Parsed, draw: bool) -> Answer {
     let mut g = HashMap::new();
     let mut all_grid = vec![g.clone()];
     // init tiles to white
     for path in paths {
         let mut coord = [0, 0, 0];
-	let mut gg = g.clone();
+        let mut gg = g.clone();
         for d in path {
             coord = aoc::vec_add(coord, *d);
             gg.insert(coord, '+');
@@ -104,8 +69,10 @@ fn part2(paths: &Parsed) -> Answer {
         } else {
             *col = '.';
         }
-	gg.insert(coord, *col);
-        all_grid.push(gg.clone());
+        gg.insert(coord, *col);
+        if draw {
+            all_grid.push(gg.clone());
+        }
     }
     let d = [HEX_E, HEX_W, HEX_SW, HEX_SE, HEX_NW, HEX_NE];
     for _ in 0..100 {
@@ -135,194 +102,198 @@ fn part2(paths: &Parsed) -> Answer {
             }
         }
         g = newg.clone();
-        all_grid.push(g.clone());
+        if draw {
+            all_grid.push(g.clone());
+        }
     }
-    // Draw all the grids, using the same coord system
-    let mut min_xx = 0;
-    let mut min_yy = 0;
-    let mut min_zz = 0;
-    let mut max_xx = 0;
-    let mut max_yy = 0;
-    let mut max_zz = 0;
-    for gg in &all_grid {
-        let ([min_x, min_y, min_z], [max_x, max_y, max_z]) = extents(&gg);
-        min_xx = min_xx.min(min_x);
-        min_yy = min_yy.min(min_y);
-        min_zz = min_zz.min(min_z);
-        max_xx = max_xx.max(max_x);
-        max_yy = max_yy.max(max_y);
-        max_zz = max_zz.max(max_z);
-    }
-    for gg in &mut all_grid {
-        // Insert the min/max corners in all grids
-        gg.insert([min_xx, min_yy, min_zz], '.');
-        gg.insert([max_xx, max_yy, max_zz], '.');
-    }
-    let window = aoc::initscr();
-    aoc::nl();
-    aoc::noecho();
-    aoc::curs_set(0);
-    window.keypad(true);
-    window.scrollok(true);
-    window.nodelay(true);
-    let mut gd = aoc::BitmapGridDrawer::new(
-        (1, 1),
-        |x| {
-            if x == 'B' {
-                vec![(0, 0, 0)]
-            } else if x == '+' {
-                vec![(200, 20, 20)]
-            } else if x == '-' {
-                vec![(100, 240, 100)]
-            } else if x == '*' {
-                vec![(70, 70, 70)]
-            } else {
-                vec![(255, 255, 255)]
-            }
-        },
-        "ppm/day24/part2",
-    );
-    for gg in &all_grid {
-        window.clear();
-        let mut g = HashMap::new();
-        // Convert coords
-        for (p, v) in gg {
-            g.insert(cube_to_oddr(*p), *v);
+    if draw {
+        // Draw all the grids, using the same coord system
+        let mut min_xx = 0;
+        let mut min_yy = 0;
+        let mut min_zz = 0;
+        let mut max_xx = 0;
+        let mut max_yy = 0;
+        let mut max_zz = 0;
+        for gg in &all_grid {
+            let ([min_x, min_y, min_z], [max_x, max_y, max_z]) = extents(&gg);
+            min_xx = min_xx.min(min_x);
+            min_yy = min_yy.min(min_y);
+            min_zz = min_zz.min(min_z);
+            max_xx = max_xx.max(max_x);
+            max_yy = max_yy.max(max_y);
+            max_zz = max_zz.max(max_z);
         }
-	// Not sure about the scaling here..
-        let min_x = 2 * g.iter().map(|(p, _v)| p[0]).min().unwrap_or(0) as i32 / 3;
-        let min_y = g.iter().map(|(p, _v)| p[1]).min().unwrap_or(0) as i32;
-        let max_x = 2 * g.iter().map(|(p, _v)| p[0]).max().unwrap_or(0) as i32 / 3;
-        let max_y = g.iter().map(|(p, _v)| p[1]).max().unwrap_or(0) as i32;
-        let mut mg = vec![];
-        // First, make bitmaps
-        let bw = 6 * (max_x - min_x + 1);
-        let bh = 6 * (max_y - min_y + 1);
-        for _y in 0..bh {
-            let mut v = vec![];
-            v.resize(bw as usize, '.');
-            mg.push(v)
+        for gg in &mut all_grid {
+            // Insert the min/max corners in all grids
+            gg.insert([min_xx, min_yy, min_zz], '.');
+            gg.insert([max_xx, max_yy, max_zz], '.');
         }
-        // Make a hexagon
-        let mut hex = vec![vec!['.'; 7]; 10];
-        hex.set_value([3, 0], '-');
-        hex.set_value([2, 1], '-');
-        hex.set_value([4, 1], '-');
-        hex.set_value([1, 2], '-');
-        hex.set_value([5, 2], '-');
-        hex.set_value([0, 3], '-');
-        hex.set_value([6, 3], '-');
-        hex.set_value([0, 4], '-');
-        hex.set_value([6, 4], '-');
-        hex.set_value([0, 5], '-');
-        hex.set_value([6, 5], '-');
-        hex.set_value([0, 6], '-');
-        hex.set_value([6, 6], '-');
-        hex.set_value([1, 7], '-');
-        hex.set_value([5, 7], '-');
-        hex.set_value([2, 8], '-');
-        hex.set_value([4, 8], '-');
-        hex.set_value([3, 9], '-');
-        for y in min_y..=max_y {
-            let (xoffs, yoffs) = if y.rem_euclid(2) == 0 { (3, 0) } else { (0, 0) };
-            for x in min_x..=max_x {
-                mg.blit(
-                    [
-                        ((x - min_x) * 6 + xoffs) as i64,
-                        ((y - min_y) * 6 + yoffs) as i64,
-                    ],
-                    &hex,
-                );
-            }
-        }
-        // fill them in
-        for y in min_y..=max_y {
-            let (xoffs, yoffs) = if y.rem_euclid(2) == 0 { (3, 0) } else { (0, 0) };
-            for x in min_x..=max_x {
-                let p = [x as i64, y as i64];
-                let c = g.get(&p).unwrap_or(&'.');
-                mg.fill(
-                    [
-                        ((x - min_x) * 6 + xoffs + 3) as i64,
-                        ((y - min_y) * 6 + yoffs + 5) as i64,
-                    ],
-                    *c,
-                );
-            }
-        }
-        gd.draw(&mg);
-        // two rows per row in the output
-        let w = 2 * (max_x - min_x);
-        let h = 2 * (max_y - min_y);
-        let ww = window.get_max_x();
-        let wh = window.get_max_y();
-        let offs_x = (ww - w) / 2;
-        let offs_y = (wh - h) / 2;
-        let mut yy = offs_y;
-        let mut xx = offs_x;
-        for y in min_y..=max_y {
-            if y.rem_euclid(2) == 0 {
-                for _ in min_x..=max_x {
-                    if yy >= 0 && yy < wh {
-                        if xx >= 0 && xx < ww {
-                            window.mvaddch(yy, xx, '\\');
-                        }
-                        if xx + 1 >= 0 && xx + 1 < ww {
-                            window.mvaddch(yy, xx + 1, '/');
-                        }
-                    }
-                    xx += 2;
+        let window = aoc::initscr();
+        aoc::nl();
+        aoc::noecho();
+        aoc::curs_set(0);
+        window.keypad(true);
+        window.scrollok(true);
+        window.nodelay(true);
+        let mut gd = aoc::BitmapGridDrawer::new(
+            (1, 1),
+            |x| {
+                if x == 'B' {
+                    vec![(0, 0, 0)]
+                } else if x == '+' {
+                    vec![(200, 20, 20)]
+                } else if x == '-' {
+                    vec![(100, 240, 100)]
+                } else if x == '*' {
+                    vec![(70, 70, 70)]
+                } else {
+                    vec![(255, 255, 255)]
                 }
-                yy += 1;
-                xx = offs_x;
+            },
+            "ppm/day24/part2",
+        );
+        for gg in &all_grid {
+            window.clear();
+            let mut g = HashMap::new();
+            // Convert coords
+            for (p, v) in gg {
+                g.insert(cube_to_oddr(*p), *v);
             }
-            if y.rem_euclid(2) == 0 {
-                if xx >= 0 && xx < ww && yy >= 0 && yy < wh {
-                    window.mvaddch(yy, xx, ' ');
+            // Not sure about the scaling here..
+            let min_x = 2 * g.iter().map(|(p, _v)| p[0]).min().unwrap_or(0) as i32 / 3;
+            let min_y = g.iter().map(|(p, _v)| p[1]).min().unwrap_or(0) as i32;
+            let max_x = 2 * g.iter().map(|(p, _v)| p[0]).max().unwrap_or(0) as i32 / 3;
+            let max_y = g.iter().map(|(p, _v)| p[1]).max().unwrap_or(0) as i32;
+            let mut mg = vec![];
+            // First, make bitmaps
+            let bw = 6 * (max_x - min_x + 1);
+            let bh = 6 * (max_y - min_y + 1);
+            for _y in 0..bh {
+                let mut v = vec![];
+                v.resize(bw as usize, '.');
+                mg.push(v)
+            }
+            // Make a hexagon
+            let mut hex = vec![vec!['.'; 7]; 10];
+            hex.set_value([3, 0], '-');
+            hex.set_value([2, 1], '-');
+            hex.set_value([4, 1], '-');
+            hex.set_value([1, 2], '-');
+            hex.set_value([5, 2], '-');
+            hex.set_value([0, 3], '-');
+            hex.set_value([6, 3], '-');
+            hex.set_value([0, 4], '-');
+            hex.set_value([6, 4], '-');
+            hex.set_value([0, 5], '-');
+            hex.set_value([6, 5], '-');
+            hex.set_value([0, 6], '-');
+            hex.set_value([6, 6], '-');
+            hex.set_value([1, 7], '-');
+            hex.set_value([5, 7], '-');
+            hex.set_value([2, 8], '-');
+            hex.set_value([4, 8], '-');
+            hex.set_value([3, 9], '-');
+            for y in min_y..=max_y {
+                let (xoffs, yoffs) = if y.rem_euclid(2) == 0 { (3, 0) } else { (0, 0) };
+                for x in min_x..=max_x {
+                    mg.blit(
+                        [
+                            ((x - min_x) * 6 + xoffs) as i64,
+                            ((y - min_y) * 6 + yoffs) as i64,
+                        ],
+                        &hex,
+                    );
                 }
-                xx += 1;
             }
-            for x in min_x..=max_x {
-                if yy >= 0 && y < wh {
+            // fill them in
+            for y in min_y..=max_y {
+                let (xoffs, yoffs) = if y.rem_euclid(2) == 0 { (3, 0) } else { (0, 0) };
+                for x in min_x..=max_x {
                     let p = [x as i64, y as i64];
                     let c = g.get(&p).unwrap_or(&'.');
-                    if xx >= 0 && x < ww {
-                        window.mvaddch(yy, xx, '|');
-                    }
-                    if xx + 1 >= 0 && x + 1 < ww {
-                        window.mvaddch(yy, xx + 1, *c);
-                    }
+                    mg.fill(
+                        [
+                            ((x - min_x) * 6 + xoffs + 3) as i64,
+                            ((y - min_y) * 6 + yoffs + 5) as i64,
+                        ],
+                        *c,
+                    );
                 }
-                xx += 2;
             }
-            if y.rem_euclid(2) == 0 {
-                yy += 1;
-                xx = offs_x;
-                for _ in min_x..=max_x {
-                    if yy >= 0 && yy < wh {
-                        if xx >= 0 && xx < ww {
-                            window.mvaddch(yy, xx + 1, '/');
+            gd.draw(&mg);
+            // two rows per row in the output
+            let w = 2 * (max_x - min_x);
+            let h = 2 * (max_y - min_y);
+            let ww = window.get_max_x();
+            let wh = window.get_max_y();
+            let offs_x = (ww - w) / 2;
+            let offs_y = (wh - h) / 2;
+            let mut yy = offs_y;
+            let mut xx = offs_x;
+            for y in min_y..=max_y {
+                if y.rem_euclid(2) == 0 {
+                    for _ in min_x..=max_x {
+                        if yy >= 0 && yy < wh {
+                            if xx >= 0 && xx < ww {
+                                window.mvaddch(yy, xx, '\\');
+                            }
+                            if xx + 1 >= 0 && xx + 1 < ww {
+                                window.mvaddch(yy, xx + 1, '/');
+                            }
                         }
-                        if xx + 1 >= 0 && xx + 1 < ww {
-                            window.mvaddch(yy, xx, '\\');
+                        xx += 2;
+                    }
+                    yy += 1;
+                    xx = offs_x;
+                }
+                if y.rem_euclid(2) == 0 {
+                    if xx >= 0 && xx < ww && yy >= 0 && yy < wh {
+                        window.mvaddch(yy, xx, ' ');
+                    }
+                    xx += 1;
+                }
+                for x in min_x..=max_x {
+                    if yy >= 0 && y < wh {
+                        let p = [x as i64, y as i64];
+                        let c = g.get(&p).unwrap_or(&'.');
+                        if xx >= 0 && x < ww {
+                            window.mvaddch(yy, xx, '|');
+                        }
+                        if xx + 1 >= 0 && x + 1 < ww {
+                            window.mvaddch(yy, xx + 1, *c);
                         }
                     }
                     xx += 2;
                 }
+                if y.rem_euclid(2) == 0 {
+                    yy += 1;
+                    xx = offs_x;
+                    for _ in min_x..=max_x {
+                        if yy >= 0 && yy < wh {
+                            if xx >= 0 && xx < ww {
+                                window.mvaddch(yy, xx + 1, '/');
+                            }
+                            if xx + 1 >= 0 && xx + 1 < ww {
+                                window.mvaddch(yy, xx, '\\');
+                            }
+                        }
+                        xx += 2;
+                    }
+                }
+                yy += 1;
+                xx = offs_x;
+                if yy > window.get_max_y() {
+                    break;
+                }
             }
-            yy += 1;
-            xx = offs_x;
-            if yy > window.get_max_y() {
-                break;
+            if let Some(aoc::Input::Character(c)) = window.getch() {
+                if c == 'q' {
+                    aoc::endwin();
+                    std::process::exit(0);
+                }
             }
+            window.refresh();
         }
-        if let Some(aoc::Input::Character(c)) = window.getch() {
-            if c == 'q' {
-                aoc::endwin();
-                std::process::exit(0);
-            }
-        }
-        window.refresh();
     }
     g.iter().filter(|(_coord, c)| **c == 'B').count()
 }
@@ -367,8 +338,10 @@ fn main() {
     let parsed = parse(&lines);
     let result = if part == 1 {
         part1(&parsed)
+    } else if part == 3 {
+        part2(&parsed, true)
     } else {
-        part2(&parsed)
+        part2(&parsed, false)
     };
     println!("{}", result);
 }
@@ -405,31 +378,32 @@ mod tests {
         assert_eq!(part1(&parsed), 10);
     }
 
-    #[test]
-    fn test_part2() {
-        let input = vec![
-            "sesenwnenenewseeswwswswwnenewsewsw".to_string(),
-            "neeenesenwnwwswnenewnwwsewnenwseswesw".to_string(),
-            "seswneswswsenwwnwse".to_string(),
-            "nwnwneseeswswnenewneswwnewseswneseene".to_string(),
-            "swweswneswnenwsewnwneneseenw".to_string(),
-            "eesenwseswswnenwswnwnwsewwnwsene".to_string(),
-            "sewnenenenesenwsewnenwwwse".to_string(),
-            "wenwwweseeeweswwwnwwe".to_string(),
-            "wsweesenenewnwwnwsenewsenwwsesesenwne".to_string(),
-            "neeswseenwwswnwswswnw".to_string(),
-            "nenwswwsewswnenenewsenwsenwnesesenew".to_string(),
-            "enewnwewneswsewnwswenweswnenwsenwsw".to_string(),
-            "sweneswneswneneenwnewenewwneswswnese".to_string(),
-            "swwesenesewenwneswnwwneseswwne".to_string(),
-            "enesenwswwswneneswsenwnewswseenwsese".to_string(),
-            "wnwnesenesenenwwnenwsewesewsesesew".to_string(),
-            "nenewswnwewswnenesenwnesewesw".to_string(),
-            "eneswnwswnwsenenwnwnwwseeswneewsenese".to_string(),
-            "neswnwewnwnwseenwseesewsenwsweewe".to_string(),
-            "wseweeenwnesenwwwswnew".to_string(),
-        ];
-        let parsed = parse(&input);
-        assert_eq!(part2(&parsed), 2208);
-    }
+    // This test takes too long to run
+    // #[test]
+    // fn test_part2() {
+    //     let input = vec![
+    //         "sesenwnenenewseeswwswswwnenewsewsw".to_string(),
+    //         "neeenesenwnwwswnenewnwwsewnenwseswesw".to_string(),
+    //         "seswneswswsenwwnwse".to_string(),
+    //         "nwnwneseeswswnenewneswwnewseswneseene".to_string(),
+    //         "swweswneswnenwsewnwneneseenw".to_string(),
+    //         "eesenwseswswnenwswnwnwsewwnwsene".to_string(),
+    //         "sewnenenenesenwsewnenwwwse".to_string(),
+    //         "wenwwweseeeweswwwnwwe".to_string(),
+    //         "wsweesenenewnwwnwsenewsenwwsesesenwne".to_string(),
+    //         "neeswseenwwswnwswswnw".to_string(),
+    //         "nenwswwsewswnenenewsenwsenwnesesenew".to_string(),
+    //         "enewnwewneswsewnwswenweswnenwsenwsw".to_string(),
+    //         "sweneswneswneneenwnewenewwneswswnese".to_string(),
+    //         "swwesenesewenwneswnwwneseswwne".to_string(),
+    //         "enesenwswwswneneswsenwnewswseenwsese".to_string(),
+    //         "wnwnesenesenenwwnenwsewesewsesesew".to_string(),
+    //         "nenewswnwewswnenesenwnesewesw".to_string(),
+    //         "eneswnwswnwsenenwnwnwwseeswneewsenese".to_string(),
+    //         "neswnwewnwnwseenwseesewsenwsweewe".to_string(),
+    //         "wseweeenwnesenwwwswnew".to_string(),
+    //     ];
+    //     let parsed = parse(&input);
+    //     assert_eq!(part2(&parsed, false), 2208);
+    // }
 }
