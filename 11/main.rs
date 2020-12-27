@@ -1,13 +1,13 @@
 use aoc::Grid;
 use aoc::*;
 
-static DG: (u8, u8, u8) = (0, 100, 0);
-static LG: (u8, u8, u8) = (0, 255, 0);
-static OW: (u8, u8, u8) = (200, 200, 200);
+static DG: [u8;3] = [0, 100, 0];
+static LG: [u8;3] = [0, 255, 0];
+static OW: [u8;3] = [200, 200, 200];
 
 fn part1(grid: &[Vec<char>], d: bool) -> usize {
     let mut g = grid.to_owned();
-    let mut gd = aoc::BitmapGridDrawer::new(
+    let mut gd = aoc::BitmapSpriteGridDrawer::new(
         (2, 2),
         |x| match x {
             '#' => vec![LG, LG, LG, LG],
@@ -57,7 +57,7 @@ fn part1(grid: &[Vec<char>], d: bool) -> usize {
 
 fn part2(grid: &[Vec<char>], d: bool) -> usize {
     let mut g = grid.to_owned();
-    let mut gd = aoc::BitmapGridDrawer::new(
+    let mut gd = aoc::BitmapSpriteGridDrawer::new(
         (2, 2),
         |x| match x {
             '#' => vec![LG, LG, LG, LG],

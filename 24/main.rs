@@ -111,13 +111,13 @@ fn part2(paths: &Parsed, draw: bool) -> Answer {
         let mut gd = aoc::BitmapHexGridDrawer::new(
             |x| {
                 if x == 'B' {
-                    (0, 0, 0)
+                    [0, 0, 0]
                 } else if x == '+' {
-                    (200, 20, 20)
+                    [200, 20, 20]
                 } else if x == '*' {
-                    (70, 70, 70)
+                    [70, 70, 70]
                 } else {
-                    (255, 255, 255)
+                    [255, 255, 255]
                 }
             },
             "ppm/day24/part2",

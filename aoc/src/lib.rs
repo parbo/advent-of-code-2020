@@ -1,4 +1,4 @@
-use image::{Rgb, RgbImage};
+use image::{GenericImageView, Rgb, RgbImage};
 use std::collections::HashMap;
 use std::env;
 use std::error;
@@ -488,7 +488,6 @@ where
         let (start, end) = g.extents();
         self.blit_rect(pos, g, start, end);
     }
-    // pos is position to blit to, start/end is the rect to copy from grid
     fn blit_rect(&mut self, pos: Point, g: &dyn Grid<T>, start: Point, end: Point) {
         let ([min_x, min_y], [max_x, max_y]) = g.extents();
         let min_xx = min_x.max(start[0]);
@@ -500,6 +499,53 @@ where
                 let [xxx, yyy] = point_add(pos, [dx as i64, dy as i64]);
                 if let Some(v) = g.get_value([xx, yy]) {
                     self.set_value([xxx, yyy], v);
+                }
+            }
+        }
+    }
+}
+
+pub trait GridConvert<G, T, U>
+where
+    Self: Grid<T> + Clone + Sized,
+    T: PartialEq + Copy,
+    U: PartialEq + Copy,
+{
+    fn blit_rect_convert(
+        &mut self,
+        pos: Point,
+        g: &dyn Grid<U>,
+        start: Point,
+        end: Point,
+        convert: fn(U) -> T,
+    );
+}
+
+impl<G, T, U> GridConvert<G, T, U> for G
+where
+    G: Grid<T> + Clone + Sized,
+    T: PartialEq + Copy,
+    U: PartialEq + Copy,
+{
+    // pos is position to blit to, start/end is the rect to copy from grid
+    fn blit_rect_convert(
+        &mut self,
+        pos: Point,
+        g: &dyn Grid<U>,
+        start: Point,
+        end: Point,
+        convert: fn(U) -> T,
+    ) {
+        let ([min_x, min_y], [max_x, max_y]) = g.extents();
+        let min_xx = min_x.max(start[0]);
+        let min_yy = min_y.max(start[1]);
+        let max_xx = max_x.min(end[0]);
+        let max_yy = max_y.min(end[1]);
+        for (dy, yy) in (min_yy..=max_yy).enumerate() {
+            for (dx, xx) in (min_xx..=max_xx).enumerate() {
+                let [xxx, yyy] = point_add(pos, [dx as i64, dy as i64]);
+                if let Some(v) = g.get_value([xx, yy]) {
+                    self.set_value([xxx, yyy], convert(v));
                 }
             }
         }
@@ -716,6 +762,59 @@ where
     }
 }
 
+impl Grid<[u8; 3]> for image::RgbImage {
+    fn get_value(&self, pos: Point) -> Option<[u8; 3]> {
+        let x = pos[0] as u32;
+        let y = pos[1] as u32;
+        // This is [min, max[
+        let (min_x, min_y, max_x, max_y) = self.bounds();
+        if x >= min_x && x < max_x && y >= min_y && y < max_y {
+            let Rgb(rgb) = self.get_pixel(x, y);
+            Some(*rgb)
+        } else {
+            None
+        }
+    }
+    fn set_value(&mut self, pos: Point, value: [u8; 3]) {
+        let x = pos[0] as u32;
+        let y = pos[1] as u32;
+        // This is [min, max[
+        let (min_x, min_y, max_x, max_y) = self.bounds();
+        if x >= min_x && x < max_x && y >= min_y && y < max_y {
+            self.put_pixel(x, y, Rgb(value));
+        }
+    }
+    fn extents(&self) -> (Point, Point) {
+        // This is [min, max[
+        let (min_x, min_y, max_x, max_y) = self.bounds();
+        (
+            [min_x as i64, min_y as i64],
+            [max_x as i64 - 1, max_y as i64 - 1],
+        )
+    }
+    fn flip_horizontal(&mut self) {
+        image::imageops::flip_horizontal_in_place(self);
+    }
+    fn flip_vertical(&mut self) {
+        image::imageops::flip_vertical_in_place(self);
+    }
+    fn rotate_90_cw(&mut self) {
+        let new = image::imageops::rotate90(self);
+        *self = new;
+    }
+    fn rotate_180_cw(&mut self) {
+        image::imageops::rotate180_in_place(self);
+    }
+    fn rotate_270_cw(&mut self) {
+        let new = image::imageops::rotate270(self);
+        *self = new;
+    }
+    fn transpose(&mut self) {
+        self.rotate_270_cw();
+        self.flip_horizontal()
+    }
+}
+
 pub trait GridDrawer<G, T>
 where
     G: Grid<T>,
@@ -850,9 +949,9 @@ where
     }
 }
 
-pub struct BitmapGridDrawer<F, G, T>
+pub struct BitmapSpriteGridDrawer<F, G, T>
 where
-    F: Fn(T) -> Vec<(u8, u8, u8)>,
+    F: Fn(T) -> Vec<[u8; 3]>,
     G: Grid<T>,
     T: PartialEq + Copy,
 {
@@ -870,9 +969,9 @@ where
 // ffmpeg -i "basename_%06d.png" -filter_complex "[0:v] palettegen" basename_palette.png
 // ffmpeg -framerate 25 -i "basename_%06d.png" -i basename.png -filter_complex "[0:v][1:v] paletteuse" basename.gif
 // You can change the start number with the -start_number input option.
-impl<F, G, T> BitmapGridDrawer<F, G, T>
+impl<F, G, T> BitmapSpriteGridDrawer<F, G, T>
 where
-    F: Fn(T) -> Vec<(u8, u8, u8)>,
+    F: Fn(T) -> Vec<[u8; 3]>,
     G: Grid<T>,
     T: PartialEq + Copy,
 {
@@ -880,13 +979,13 @@ where
         sprite_dimension: (i64, i64),
         to_sprite: F,
         basename: &str,
-    ) -> BitmapGridDrawer<F, G, T> {
+    ) -> BitmapSpriteGridDrawer<F, G, T> {
         // TODO: error handling
         let path = Path::new(basename);
         if let Some(parent) = path.parent() {
             std::fs::create_dir_all(parent).expect("could not create folder");
         }
-        BitmapGridDrawer {
+        BitmapSpriteGridDrawer {
             sprite_dimension,
             to_sprite,
             frame: 0,
@@ -943,8 +1042,7 @@ where
                     let mut xx = (x - min_x) * self.sprite_dimension.0;
                     let xxx = xx;
                     for col in &sprite {
-                        let (r, g, b) = *col;
-                        let rgb = Rgb([r, g, b]);
+                        let rgb = Rgb(*col);
                         image.put_pixel(xx as u32, yy as u32, rgb);
                         xx += 1;
                         if xx - xxx >= self.sprite_dimension.0 {
@@ -958,24 +1056,142 @@ where
         self.image = Some(image);
     }
 
-    pub fn put_pixel(&mut self, p: Point, rgb: (u8, u8, u8)) {
+    pub fn put_pixel(&mut self, p: Point, rgb: [u8; 3]) {
         if let Some(ref mut image) = self.image {
             let x = p[0] as u32;
             let y = p[1] as u32;
             if x < image.width() && y < image.height() {
-                image.put_pixel(x, y, Rgb([rgb.0, rgb.1, rgb.2]));
+                image.put_pixel(x, y, Rgb(rgb));
             }
         }
     }
 
-    fn to_sprite(&self, value: T) -> Vec<(u8, u8, u8)> {
+    fn to_sprite(&self, value: T) -> Vec<[u8; 3]> {
         (self.to_sprite)(value)
+    }
+}
+
+impl<F, G, T> GridDrawer<G, T> for BitmapSpriteGridDrawer<F, G, T>
+where
+    F: Fn(T) -> Vec<[u8; 3]>,
+    G: Grid<T>,
+    T: PartialEq + Copy,
+{
+    fn draw(&mut self, area: &G) {
+        self.draw_grid(area);
+        self.save_image();
+    }
+}
+
+pub struct BitmapGridDrawer<F, G, T>
+where
+    F: Fn(T) -> [u8; 3],
+    G: Grid<T>,
+    T: PartialEq + Copy,
+{
+    to_color: F,
+    basename: String,
+    frame: usize,
+    rect: Option<(Point, Point)>,
+    image: Option<RgbImage>,
+    phantom: PhantomData<T>,
+    phantom_g: PhantomData<G>,
+}
+
+// These can be converted to movies with:
+// ffmpeg -i "basename_%06d.png" -filter_complex "[0:v] palettegen" basename_palette.png
+// ffmpeg -framerate 25 -i "basename_%06d.png" -i basename.png -filter_complex "[0:v][1:v] paletteuse" basename.gif
+// You can change the start number with the -start_number input option.
+impl<F, G, T> BitmapGridDrawer<F, G, T>
+where
+    F: Fn(T) -> [u8; 3],
+    G: Grid<T>,
+    T: PartialEq + Copy,
+{
+    pub fn new(to_color: F, basename: &str) -> BitmapGridDrawer<F, G, T> {
+        // TODO: error handling
+        let path = Path::new(basename);
+        if let Some(parent) = path.parent() {
+            std::fs::create_dir_all(parent).expect("could not create folder");
+        }
+        BitmapGridDrawer {
+            to_color,
+            frame: 0,
+            basename: basename.into(),
+            rect: None,
+            image: None,
+            phantom: PhantomData,
+            phantom_g: PhantomData,
+        }
+    }
+
+    pub fn set_rect(&mut self, r: (Point, Point)) {
+        self.rect = Some(r);
+    }
+
+    pub fn save_image(&self) {
+        let path = Path::new(&self.basename);
+        let filename = if let Some(parent) = path.parent() {
+            parent.join(&format!(
+                "{}_{:06}.png",
+                path.file_name().unwrap().to_str().unwrap(),
+                self.frame
+            ))
+        } else {
+            PathBuf::from(&format!("{}_{}.png", self.basename, self.frame))
+        };
+        if let Some(image) = &self.image {
+            image.save(filename).unwrap();
+        }
+    }
+
+    pub fn draw_grid(&mut self, area: &G) {
+        self.frame += 1;
+        let ([mut min_x, mut min_y], [mut max_x, mut max_y]) = area.extents();
+        // "clip" to rect
+        if let Some(([cmin_x, cmin_y], [cmax_x, cmax_y])) = self.rect {
+            min_x = cmin_x;
+            min_y = cmin_y;
+            max_x = cmax_x;
+            max_y = cmax_y;
+        }
+        let width = max_x - min_x + 1;
+        let height = max_y - min_y + 1;
+        // Default bg is white
+        let buffer = vec![255; (3 * width * height) as usize];
+        let mut image = RgbImage::from_raw(width as u32, height as u32, buffer).unwrap();
+        for y in min_y..=max_y {
+            for x in min_x..=max_x {
+                if let Some(value) = area.get_value([x, y]) {
+                    let color = self.to_color(value);
+                    let yy = y - min_y;
+                    let xx = x - min_x;
+                    let rgb = Rgb(color);
+                    image.put_pixel(xx as u32, yy as u32, rgb);
+                }
+            }
+        }
+        self.image = Some(image);
+    }
+
+    pub fn put_pixel(&mut self, p: Point, rgb: [u8; 3]) {
+        if let Some(ref mut image) = self.image {
+            let x = p[0] as u32;
+            let y = p[1] as u32;
+            if x < image.width() && y < image.height() {
+                image.put_pixel(x, y, Rgb(rgb));
+            }
+        }
+    }
+
+    fn to_color(&self, value: T) -> [u8; 3] {
+        (self.to_color)(value)
     }
 }
 
 impl<F, G, T> GridDrawer<G, T> for BitmapGridDrawer<F, G, T>
 where
-    F: Fn(T) -> Vec<(u8, u8, u8)>,
+    F: Fn(T) -> [u8; 3],
     G: Grid<T>,
     T: PartialEq + Copy,
 {
@@ -1629,7 +1845,7 @@ where
 
 pub struct BitmapHexGridDrawer<F, G, T>
 where
-    F: Fn(T) -> (u8, u8, u8),
+    F: Fn(T) -> [u8; 3],
     G: HexGrid<T>,
     T: PartialEq + Copy,
 {
@@ -1637,7 +1853,7 @@ where
     basename: String,
     frame: usize,
     image: Option<RgbImage>,
-    hexagon: Vec<Vec<(u8, u8, u8)>>,
+    hexagon: Vec<Vec<[u8; 3]>>,
     phantom: PhantomData<T>,
     phantom_g: PhantomData<G>,
 }
@@ -1648,7 +1864,7 @@ where
 // You can change the start number with the -start_number input option.
 impl<F, G, T> BitmapHexGridDrawer<F, G, T>
 where
-    F: Fn(T) -> (u8, u8, u8),
+    F: Fn(T) -> [u8; 3],
     G: HexGrid<T>,
     T: PartialEq + Copy + Default,
 {
@@ -1659,25 +1875,25 @@ where
             std::fs::create_dir_all(parent).expect("could not create folder");
         }
         // Make a hexagon
-        let mut hex = vec![vec![(255, 255, 255); 7]; 10];
-        hex.set_value([3, 0], (180, 180, 180));
-        hex.set_value([2, 1], (180, 180, 180));
-        hex.set_value([4, 1], (180, 180, 180));
-        hex.set_value([1, 1], (180, 180, 180));
-        hex.set_value([5, 1], (180, 180, 180));
-        hex.set_value([0, 2], (180, 180, 180));
-        hex.set_value([6, 2], (180, 180, 180));
-        hex.set_value([0, 3], (180, 180, 180));
-        hex.set_value([6, 3], (180, 180, 180));
-        hex.set_value([0, 4], (180, 180, 180));
-        hex.set_value([6, 4], (180, 180, 180));
-        hex.set_value([0, 5], (180, 180, 180));
-        hex.set_value([6, 5], (180, 180, 180));
-        hex.set_value([1, 6], (180, 180, 180));
-        hex.set_value([5, 6], (180, 180, 180));
-        hex.set_value([2, 6], (180, 180, 180));
-        hex.set_value([4, 6], (180, 180, 180));
-        hex.set_value([3, 7], (180, 180, 180));
+        let mut hex = vec![vec![[255, 255, 255]; 7]; 10];
+        hex.set_value([3, 0], [180, 180, 180]);
+        hex.set_value([2, 1], [180, 180, 180]);
+        hex.set_value([4, 1], [180, 180, 180]);
+        hex.set_value([1, 1], [180, 180, 180]);
+        hex.set_value([5, 1], [180, 180, 180]);
+        hex.set_value([0, 2], [180, 180, 180]);
+        hex.set_value([6, 2], [180, 180, 180]);
+        hex.set_value([0, 3], [180, 180, 180]);
+        hex.set_value([6, 3], [180, 180, 180]);
+        hex.set_value([0, 4], [180, 180, 180]);
+        hex.set_value([6, 4], [180, 180, 180]);
+        hex.set_value([0, 5], [180, 180, 180]);
+        hex.set_value([6, 5], [180, 180, 180]);
+        hex.set_value([1, 6], [180, 180, 180]);
+        hex.set_value([5, 6], [180, 180, 180]);
+        hex.set_value([2, 6], [180, 180, 180]);
+        hex.set_value([4, 6], [180, 180, 180]);
+        hex.set_value([3, 7], [180, 180, 180]);
         BitmapHexGridDrawer {
             to_color,
             frame: 0,
@@ -1713,17 +1929,12 @@ where
         let height = max_y - min_y + 1;
         let pixelw = (width + 1) * 6;
         let pixelh = (height + 1) * 5;
-        // Make a big grid
-        let mut mg = vec![];
-        for _y in 0..pixelh {
-            let mut v = vec![];
-            v.resize(pixelw as usize, (255, 255, 255));
-            mg.push(v)
-        }
+        let buffer = vec![255; (3 * pixelw * pixelh) as usize];
+        let mut image = RgbImage::from_raw(pixelw as u32, pixelh as u32, buffer).unwrap();
         for y in min_y..=max_y {
             let (xoffs, yoffs) = if y.rem_euclid(2) != 0 { (3, 0) } else { (0, 0) };
             for x in min_x..=max_x {
-                mg.blit(
+                image.blit(
                     [
                         ((x - min_x) * 6 + xoffs) as i64,
                         ((y - min_y) * 5 + yoffs) as i64,
@@ -1738,7 +1949,7 @@ where
             for x in min_x..=max_x {
                 let p = [x as i64, y as i64];
                 if let Some(c) = g.get(&p) {
-                    mg.fill(
+                    image.fill(
                         [
                             ((x - min_x) * 6 + xoffs + 3) as i64,
                             ((y - min_y) * 5 + yoffs + 3) as i64,
@@ -1748,27 +1959,15 @@ where
                 }
             }
         }
-        // Now make a bitmap image
-        // Default bg is white
-        let buffer = vec![255; (3 * pixelw * pixelh) as usize];
-        let mut image = RgbImage::from_raw(pixelw as u32, pixelh as u32, buffer).unwrap();
-        for y in 0..pixelh {
-            for x in 0..pixelw {
-                let value = mg.get_value([x, y]).unwrap();
-                let (r, g, b) = value;
-                let rgb = Rgb([r, g, b]);
-                image.put_pixel(x as u32, y as u32, rgb);
-            }
-        }
         self.image = Some(image);
     }
 
-    pub fn put_pixel(&mut self, p: Point, rgb: (u8, u8, u8)) {
+    pub fn put_pixel(&mut self, p: Point, rgb: [u8; 3]) {
         if let Some(ref mut image) = self.image {
             let x = p[0] as u32;
             let y = p[1] as u32;
             if x < image.width() && y < image.height() {
-                image.put_pixel(x, y, Rgb([rgb.0, rgb.1, rgb.2]));
+                image.put_pixel(x, y, Rgb(rgb));
             }
         }
     }
@@ -1776,7 +1975,7 @@ where
 
 impl<F, G, T> HexGridDrawer<G, T> for BitmapHexGridDrawer<F, G, T>
 where
-    F: Fn(T) -> (u8, u8, u8),
+    F: Fn(T) -> [u8; 3],
     G: HexGrid<T>,
     T: PartialEq + Copy + Default,
 {

@@ -95,13 +95,12 @@ fn part2(ops: &[Op], draw: bool) -> i64 {
         let vals = mem.len();
         let side = (vals as f64).sqrt() as usize + 1;
         let mut gd = aoc::BitmapGridDrawer::new(
-            (1, 1),
             |x| {
-                vec![(
+                [
                     ((x & (0xff << 16)) >> 16) as u8,
                     ((x & (0xff << 8)) >> 8) as u8,
                     (x & 0xff) as u8,
-                )]
+                ]
             },
             "ppm/day14/part2",
         );

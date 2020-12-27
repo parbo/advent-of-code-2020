@@ -53,10 +53,9 @@ fn draw(orig_path: &[(Point, Point)], s: &str, scale: i64) {
     g.insert([minx, miny], '.');
     g.insert([maxx, maxy], '.');
     let mut gd = aoc::BitmapGridDrawer::new(
-        (1, 1),
         |x| match x {
-            '#' => vec![(100, 0, 0)],
-            _ => vec![(255, 255, 255)],
+            '#' => [100, 0, 0],
+            _ => [255, 255, 255],
         },
         s,
     );
@@ -76,25 +75,16 @@ fn draw(orig_path: &[(Point, Point)], s: &str, scale: i64) {
             // Fatten up the ship
             for y in -4..=4 {
                 for x in -4..=4 {
-                    gd.put_pixel(
-                        point_add([x, y], [500, 500]),
-                        (255, 0, 0),
-                    );
-		}
-	    }
-	    // Draw the wp as a plus and also offset it a bit
-	    let pp = point_mul(*wp, 16);
+                    gd.put_pixel(point_add([x, y], [500, 500]), [255, 0, 0]);
+                }
+            }
+            // Draw the wp as a plus and also offset it a bit
+            let pp = point_mul(*wp, 16);
             for y in -2..=2 {
-                gd.put_pixel(
-                    point_add(point_add([0, y], pp), [500, 500]),
-                    (0, 0, 255),
-                );
-	    }
+                gd.put_pixel(point_add(point_add([0, y], pp), [500, 500]), [0, 0, 255]);
+            }
             for x in -2..=2 {
-                gd.put_pixel(
-                    point_add(point_add([x, 0], pp), [500, 500]),
-                    (0, 0, 255),
-                );
+                gd.put_pixel(point_add(point_add([x, 0], pp), [500, 500]), [0, 0, 255]);
             }
             gd.save_image();
         }
